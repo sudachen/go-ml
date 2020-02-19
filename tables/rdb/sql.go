@@ -3,7 +3,7 @@ package rdb
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sudachen/go-fp/lazy"
+	"github.com/sudachen/go-fp/fu"
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/util"
@@ -30,7 +30,7 @@ func Read(source interface{}, query string, opts ...interface{}) (*tables.Table,
 		defer db.Close()
 		opts = append(opts, Driver(drv))
 	} else if db, ok = source.(*sql.DB); ok {
-		drv = lazy.StrOption(Driver(""), opts)
+		drv = fu.StrOption(Driver(""), opts)
 	}
 	rows, err := db.Query(query)
 	if err != nil {
@@ -140,7 +140,7 @@ func Write(source interface{}, t *tables.Table, table string, opts ...interface{
 		defer db.Close()
 		opts = append(opts, Driver(drv))
 	} else if db, ok = source.(*sql.DB); ok {
-		drv = lazy.StrOption(Driver(""), opts)
+		drv = fu.StrOption(Driver(""), opts)
 	}
 
 	tx, err := db.Begin()
@@ -148,7 +148,7 @@ func Write(source interface{}, t *tables.Table, table string, opts ...interface{
 		return xerrors.Errorf("database begin transaction error: %w", err)
 	}
 
-	if lazy.Option(ErrorIfExists, opts).Interface().(IfExists_) == DropIfExists {
+	if fu.Option(ErrorIfExists, opts).Interface().(IfExists_) == DropIfExists {
 		_, err := tx.Exec(SqlDropQuery(table, opts...))
 		if err != nil {
 			return xerrors.Errorf("drop table error: %w", err)
@@ -173,7 +173,7 @@ func Write(source interface{}, t *tables.Table, table string, opts ...interface{
 }
 
 func SqlDropQuery(table string, opts ...interface{}) string {
-	schema := lazy.StrOption(Schema(""), opts)
+	schema := fu.StrOption(Schema(""), opts)
 	if schema != "" {
 		schema = schema + "."
 	}
@@ -181,9 +181,9 @@ func SqlDropQuery(table string, opts ...interface{}) string {
 }
 
 func SqlCreateQuery(t *tables.Table, table string, opts ...interface{}) string {
-	ifExists := lazy.Option(ErrorIfExists, opts).Interface().(IfExists_)
-	schema := lazy.StrOption(Schema(""), opts)
-	pk := lazy.StrOption(PrimaryKey(""), opts)
+	ifExists := fu.Option(ErrorIfExists, opts).Interface().(IfExists_)
+	schema := fu.StrOption(Schema(""), opts)
+	pk := fu.StrOption(PrimaryKey(""), opts)
 
 	if schema != "" {
 		schema = schema + "."
@@ -197,7 +197,7 @@ func SqlCreateQuery(t *tables.Table, table string, opts ...interface{}) string {
 
 	query = query + schema + table + "( "
 	sqltps := GetDbTypes(opts)
-	driver := lazy.StrOption(Driver(""), opts)
+	driver := fu.StrOption(Driver(""), opts)
 
 	raw := t.Raw()
 
@@ -257,7 +257,7 @@ func SqlTypeOf(tp reflect.Type, driver string) string {
 
 func GetDbTypes(opts []interface{}) map[string]string {
 	m := map[string]string{}
-	driver := lazy.StrOption(Driver(""), opts)
+	driver := fu.StrOption(Driver(""), opts)
 	for _, o := range opts {
 		switch v := o.(type) {
 		case DATE:
@@ -313,11 +313,11 @@ func GetDbTypes(opts []interface{}) map[string]string {
 }
 
 func SqlInsert(t *tables.Table, tx *sql.Tx, table string, opts ...interface{}) error {
-	ifExists := lazy.Option(ErrorIfExists, opts).Interface().(IfExists_)
-	schema := lazy.StrOption(Schema(""), opts)
-	batchLen := lazy.IntOption(Batch(1), opts)
-	drv := lazy.StrOption(Driver(""), opts)
-	pk := strings.Split(lazy.StrOption(PrimaryKey(""), opts), ",")
+	ifExists := fu.Option(ErrorIfExists, opts).Interface().(IfExists_)
+	schema := fu.StrOption(Schema(""), opts)
+	batchLen := fu.IntOption(Batch(1), opts)
+	drv := fu.StrOption(Driver(""), opts)
+	pk := strings.Split(fu.StrOption(PrimaryKey(""), opts), ",")
 
 	if schema != "" {
 		schema = schema + "."
