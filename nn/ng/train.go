@@ -2,8 +2,8 @@ package ng
 
 import (
 	"fmt"
-	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/nn"
+	"github.com/sudachen/go-ml/nn/mx"
 	"time"
 )
 

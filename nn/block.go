@@ -32,7 +32,7 @@ func (bc *BlockConcat) Combine(s *mx.Symbol) *mx.Symbol {
 	for _, v := range bc.blocks {
 		if v != nil {
 			x := v.Combine(s)
-			b = append(b,x)
+			b = append(b, x)
 		}
 	}
 	return mx.Concat(b...)
@@ -76,8 +76,7 @@ func Residual(a ...Block) Block {
 
 func (rcb *ResidualBlock) Combine(a *mx.Symbol) *mx.Symbol {
 	for _, n := range rcb.blocks {
-		a = mx.Add(a,n.Combine(a))
+		a = mx.Add(a, n.Combine(a))
 	}
 	return a
 }
-

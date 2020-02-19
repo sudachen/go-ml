@@ -207,7 +207,7 @@ func NewNDArrayHandle(devType int, devNo int, dtype int, shape [4]int, slen int)
 	var a C.NDArrayHandle
 	s := [4]C.uint{C.uint(shape[0]), C.uint(shape[1]), C.uint(shape[2]), C.uint(shape[3])}
 	if e := C.MXNDArrayCreateEx(&s[0], C.uint(slen), C.int(devType), C.int(devNo), 0, C.int(dtype), &a); e != 0 {
-		panic (fmt.Sprintf("failed to create ndarry: %v", mxLastError()))
+		panic(fmt.Sprintf("failed to create ndarry: %v", mxLastError()))
 	}
 	return NDArrayHandle(a)
 }
@@ -443,7 +443,7 @@ func GroupSymbols(s []SymbolHandle) SymbolHandle {
 func GetInternals(s SymbolHandle) SymbolHandle {
 	var o SymbolHandle
 	if e := C.MXSymbolGetInternals(s, &o); e != 0 {
-		panic( fmt.Sprintf("failed to get mxnet symbol internals: %v", mxLastError()))
+		panic(fmt.Sprintf("failed to get mxnet symbol internals: %v", mxLastError()))
 	}
 	return o
 }
@@ -476,7 +476,7 @@ func Bind(symbol SymbolHandle, devType, devNo int, args []NDArrayHandle, grads [
 		&r)
 
 	if e != 0 {
-		panic("failed to bind mxnet symbols: "+mxLastError())
+		panic("failed to bind mxnet symbols: " + mxLastError())
 	}
 
 	return r

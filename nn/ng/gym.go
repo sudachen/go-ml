@@ -3,8 +3,8 @@ package ng
 import (
 	"fmt"
 	"github.com/sudachen/go-ml/logger"
-	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/nn"
+	"github.com/sudachen/go-ml/nn/mx"
 	"time"
 )
 
@@ -15,7 +15,7 @@ const (
 	Printing
 	Logging
 	NoSummary = 0x1000
-	Silent = _Silent | NoSummary
+	Silent    = _Silent | NoSummary
 )
 
 type Gym struct {

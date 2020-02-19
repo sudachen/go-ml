@@ -35,7 +35,7 @@ func (a *NDArray) Ones() *NDArray {
 }
 
 func (a *NDArray) Fill(value float32) *NDArray {
-	capi.ImperativeInvokeInplace1(capi.OpZeros,a.handle)
+	capi.ImperativeInvokeInplace1(capi.OpZeros, a.handle)
 	capi.ImperativeInvokeInOut1(
 		capi.OpAddScalar,
 		a.handle,

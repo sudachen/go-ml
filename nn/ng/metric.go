@@ -77,22 +77,22 @@ func (g *Erfc) Satisfy() bool {
 
 func ErfcAbs(scale, output, label float32) float64 {
 	dif := math.Abs(float64(label) - float64(output))
-	return math.Erfc(dif*float64(scale))
+	return math.Erfc(dif * float64(scale))
 }
 
 type DetailedMetric struct {
-	Vals  []float64
-	Count []int
+	Vals     []float64
+	Count    []int
 	Accuracy float32
-	Scale float32
-	F     func(float32,float32,float32) float64
+	Scale    float32
+	F        func(float32, float32, float32) float64
 }
 
 func (g *DetailedMetric) Collect(data, label []float32) {
 	L := len(label)
 	if g.Vals == nil || g.Count == nil {
-		g.Vals = make([]float64,L+1)
-		g.Count = make([]int,L+1)
+		g.Vals = make([]float64, L+1)
+		g.Count = make([]int, L+1)
 	}
 	f := g.F
 	if f == nil {
@@ -100,7 +100,7 @@ func (g *DetailedMetric) Collect(data, label []float32) {
 	}
 	var m float64
 	for i, v := range label {
-		q := f(fu.Fnzf(g.Scale,1),v,data[i])
+		q := f(fu.Fnzf(g.Scale, 1), v, data[i])
 		g.Vals[i] += q
 		g.Count[i]++
 		m += q
@@ -141,4 +141,3 @@ func (g *DetailedMetric) Details() []float32 {
 func (g *DetailedMetric) Satisfy() bool {
 	return g.Accuracy > 0 && g.Value() >= g.Accuracy
 }
-

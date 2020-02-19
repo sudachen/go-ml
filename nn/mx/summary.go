@@ -44,23 +44,23 @@ type GraphJs struct {
 }
 
 type SummryArg struct {
-	No   int	 `yaml:"no""`
-	Name string  `yaml:"name"`
+	No   int    `yaml:"no""`
+	Name string `yaml:"name"`
 }
 
 type SummaryRow struct {
-	No        int        	`yaml:"no"`
-	Name      string	 	`yaml:"name"`
-	Operation string	 	`yaml:"op"`
-	Params    int			`yaml:"params"`
-	Dim       Dimension		`yaml:"dimension"`
-	Args      []SummryArg	`yaml:"args"`
+	No        int         `yaml:"no"`
+	Name      string      `yaml:"name"`
+	Operation string      `yaml:"op"`
+	Params    int         `yaml:"params"`
+	Dim       Dimension   `yaml:"dimension"`
+	Args      []SummryArg `yaml:"args"`
 }
 
 type Summary []SummaryRow
 
 func (g *Graph) Summary(withLoss bool) Summary {
-	var gjs    GraphJs
+	var gjs GraphJs
 	shapes := g.GetShapes(withLoss)
 	js := g.ToJson(withLoss)
 	if err := json.Unmarshal(js, &gjs); err != nil {

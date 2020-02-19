@@ -31,7 +31,9 @@ func Array(tp Dtype, d Dimension) *NDArray {
 }
 
 func (c Context) Array(tp Dtype, d Dimension, vals ...interface{}) *NDArray {
-	if !d.Good() {panic(fmt.Sprintf("failed to create array %v%v: bad dimension", tp.String(), d.String()))}
+	if !d.Good() {
+		panic(fmt.Sprintf("failed to create array %v%v: bad dimension", tp.String(), d.String()))
+	}
 	a := &NDArray{ctx: c, dim: d, dtype: tp}
 	a.handle = capi.NewNDArrayHandle(c.DevType(), c.DevNo(), int(tp), d.Shape, d.Len)
 	if len(vals) > 0 {
@@ -42,7 +44,9 @@ func (c Context) Array(tp Dtype, d Dimension, vals ...interface{}) *NDArray {
 }
 
 func (c Context) CopyAs(a *NDArray, dtype Dtype) *NDArray {
-	if a == nil || a.handle == nil { panic("can't copy broken array") }
+	if a == nil || a.handle == nil {
+		panic("can't copy broken array")
+	}
 	b := c.Array(dtype, a.dim)
 	capi.ImperativeInvokeInOut1(capi.OpCopyTo, a.handle, b.handle)
 	return b
@@ -143,7 +147,9 @@ func copyTo(s reflect.Value, n int, v0 reflect.Value, dt reflect.Type) int {
 }
 
 func (a *NDArray) SetValues(vals ...interface{}) {
-	if a == nil || a.handle == nil { panic("can't initialize broken array") }
+	if a == nil || a.handle == nil {
+		panic("can't initialize broken array")
+	}
 
 	if a.dtype == Float16 {
 		q := CPU.CopyAs(a, Float32)
@@ -179,7 +185,9 @@ func (a *NDArray) Raw() []byte {
 }
 
 func (a *NDArray) Values(dtype Dtype) interface{} {
-	if dtype == Float16 { panic("can't gate values in Float16 format") }
+	if dtype == Float16 {
+		panic("can't gate values in Float16 format")
+	}
 	q := a
 	ln := q.dim.Total()
 	if q.dtype != dtype {

@@ -465,7 +465,6 @@ func (c *Column) MinIndex() int {
 /*
 Raw returns column internals
 */
-func (c *Column) Raw() (reflect.Value,util.Bits) {
+func (c *Column) Raw() (reflect.Value, util.Bits) {
 	return c.column, c.na
 }
-

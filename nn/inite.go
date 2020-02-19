@@ -27,7 +27,7 @@ type Xavier struct {
 	Factor    XavierFactor
 }
 
-func (x *Xavier) Inite(a *mx.NDArray)  {
+func (x *Xavier) Inite(a *mx.NDArray) {
 	var magnitude float32 = 3.
 	if x.Magnitude > 0 {
 		magnitude = x.Magnitude

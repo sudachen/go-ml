@@ -6,12 +6,12 @@ import (
 )
 
 type Slice struct {
-	Axis int
-	Begin int
-	End int
-	Name string
-	Output     bool
-	TurnOff    bool
+	Axis    int
+	Begin   int
+	End     int
+	Name    string
+	Output  bool
+	TurnOff bool
 }
 
 func (ly *Slice) Combine(in *mx.Symbol) *mx.Symbol {
@@ -23,9 +23,8 @@ func (ly *Slice) Combine(in *mx.Symbol) *mx.Symbol {
 	if ns == "" {
 		ns = fmt.Sprintf("Slice%02d", mx.NextSymbolId())
 	}
-	out := mx.Slice(in,ly.Axis,ly.Begin,ly.End)
+	out := mx.Slice(in, ly.Axis, ly.Begin, ly.End)
 	out.SetName(ns)
 	out.SetOutput(ly.Output)
 	return out
 }
-

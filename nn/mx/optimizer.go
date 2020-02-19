@@ -11,7 +11,7 @@ func SgdMomUpdate(params, grads, mom *NDArray, lr, momentum, wd float32) {
 		capi.KeyWd, wd)
 }
 
-func SgdUpdate(params, grads *NDArray, lr, wd float32)  {
+func SgdUpdate(params, grads *NDArray, lr, wd float32) {
 	capi.OptimizerUpdate(
 		capi.OpSgdUpdate,
 		params.handle, grads.handle, nil, nil,

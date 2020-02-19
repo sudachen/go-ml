@@ -22,7 +22,8 @@ type Inite interface {
 	Inite(*NDArray)
 }
 
-type _Value struct { Value []float32 }
+type _Value struct{ Value []float32 }
+
 func (v *_Value) Inite(arr *NDArray) {
 	arr.SetValues(v.Value)
 }
@@ -39,13 +40,13 @@ func ResetSymbolId(first int) {
 }
 
 type Symbol struct {
-	op    capi.MxnetOp
-	value string
-	name  string
-	args  []*Symbol
-	init  Inite
-	attr  map[capi.MxnetKey]string
-	dim   Dimension
+	op     capi.MxnetOp
+	value  string
+	name   string
+	args   []*Symbol
+	init   Inite
+	attr   map[capi.MxnetKey]string
+	dim    Dimension
 	output bool
 }
 
@@ -68,15 +69,15 @@ func (s *Symbol) SetOutput(on bool) *Symbol {
 }
 
 func Output(a *Symbol, name string) *Symbol {
-	return &Symbol{op:OpOutput_, args:[]*Symbol{a}, name: name}
+	return &Symbol{op: OpOutput_, args: []*Symbol{a}, name: name}
 }
 
 func Bound(a ...*Symbol) *Symbol {
-	return &Symbol{op:OpBound_, args:a}
+	return &Symbol{op: OpBound_, args: a}
 }
 
 func Depend(a ...*Symbol) *Symbol {
-	return &Symbol{op:OpDepend_, args:a}
+	return &Symbol{op: OpDepend_, args: a}
 }
 
 func SymbolCast(i interface{}) (*Symbol, error) {
@@ -190,15 +191,15 @@ func Greater(a *Symbol, rv interface{}) *Symbol {
 }
 
 func And(a *Symbol, b *Symbol) *Symbol {
-	return &Symbol{op:capi.OpAnd, args: []*Symbol{a,b}}
+	return &Symbol{op: capi.OpAnd, args: []*Symbol{a, b}}
 }
 
 func Or(a *Symbol, b *Symbol) *Symbol {
-	return &Symbol{op:capi.OpOr, args: []*Symbol{a,b}}
+	return &Symbol{op: capi.OpOr, args: []*Symbol{a, b}}
 }
 
 func Xor(a *Symbol, b *Symbol) *Symbol {
-	return &Symbol{op:capi.OpXor, args: []*Symbol{a,b}}
+	return &Symbol{op: capi.OpXor, args: []*Symbol{a, b}}
 }
 
 func BcastAdd(a, b *Symbol) *Symbol {
@@ -263,7 +264,7 @@ func Var(name string, opt ...interface{}) *Symbol {
 	return s
 }
 
-func Value(name string, a ...float32) *Symbol{
+func Value(name string, a ...float32) *Symbol {
 	return Var(name, Dim(len(a)), &_Value{Value: a})
 }
 
@@ -402,7 +403,7 @@ func Sum(a *Symbol, axis ...int) *Symbol {
 func Sum1(a *Symbol) *Symbol {
 	s := &Symbol{op: capi.OpSum, args: []*Symbol{a}}
 	s.attr = map[capi.MxnetKey]string{
-		capi.KeyAxis: "-1",
+		capi.KeyAxis:     "-1",
 		capi.KeyKeepdims: "1",
 	}
 	return s
@@ -682,8 +683,8 @@ func Ones(dim ...int) *Symbol {
 
 func Reshape(a *Symbol, dim ...int) *Symbol {
 	return &Symbol{
-		op:  capi.OpReshape,
-		dim: Dim(dim...),
+		op:   capi.OpReshape,
+		dim:  Dim(dim...),
 		args: []*Symbol{a},
 	}
 }

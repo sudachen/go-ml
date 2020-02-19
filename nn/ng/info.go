@@ -3,8 +3,8 @@ package ng
 import (
 	"bytes"
 	"fmt"
-	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/nn"
+	"github.com/sudachen/go-ml/nn/mx"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
@@ -27,7 +27,7 @@ type GymInfo struct {
 	Identity  string            `yaml:"identity"`
 	Seed      int               `yaml:"seed"`
 	Epoch     int               `yaml:"last"`
-	Summary   mx.Summary	    `yaml:"-"`
+	Summary   mx.Summary        `yaml:"-"`
 	EpochInfo map[int]EpochInfo `yaml:"epochs"`
 }
 
@@ -111,7 +111,7 @@ func (g *GymInfo) WriteNetwork(net *nn.Network, dir string) (err error) {
 		return
 	}
 	bf := bytes.Buffer{}
-	summary.Print(func(s string){ bf.WriteString(s+"\n")})
+	summary.Print(func(s string) { bf.WriteString(s + "\n") })
 	fname = filepath.Join(dir, SummaryTxt)
 	if err = ioutil.WriteFile(fname, bf.Bytes(), 0666); err != nil {
 		return

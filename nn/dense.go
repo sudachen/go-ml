@@ -48,7 +48,7 @@ func (ly *FullyConnected) Combine(in *mx.Symbol) *mx.Symbol {
 		out.SetName(ns + "$A")
 	}
 	if ly.Dropout > 0.01 {
-		out = mx.Dropout(out,ly.Dropout)
+		out = mx.Dropout(out, ly.Dropout)
 		out.SetName(ns + "$D")
 	}
 	out.SetOutput(ly.Output)

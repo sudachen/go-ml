@@ -85,7 +85,7 @@ func (f *Network) SetParams(p Params, force bool) error {
 	if err := f.checkParams(p, force); err != nil {
 		return err
 	}
-	f.Graph.Initialize(func(d *mx.NDArray, n string){
+	f.Graph.Initialize(func(d *mx.NDArray, n string) {
 		a, ok := p.P[n]
 		if ok {
 			d.SetValues(a[5:])
@@ -107,7 +107,7 @@ func (f *Network) checkParams(p Params, force bool) error {
 					msg := fmt.Sprintf("parameter %v has dim %v but network requires %v",
 						n, x, dm)
 					if !force {
-						return fmt.Errorf("%v",msg)
+						return fmt.Errorf("%v", msg)
 					} else {
 						logger.Warning(msg)
 					}

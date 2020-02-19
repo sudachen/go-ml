@@ -9,8 +9,7 @@ type Dropout struct {
 func (ly *Dropout) Combine(in *mx.Symbol) *mx.Symbol {
 	out := in
 	if ly.Rate > 0.01 {
-		out = mx.Dropout(out,ly.Rate)
+		out = mx.Dropout(out, ly.Rate)
 	}
 	return out
 }
-

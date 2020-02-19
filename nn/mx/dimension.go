@@ -31,16 +31,16 @@ func DimensionFromString(s string) (Dimension, error) {
 		if s[0] != '(' || s[len(s)-1] != ')' {
 			return Dimension{}, xerrors.Errorf("invalid dimension string")
 		}
-		s := s[1:len(s)-1]
+		s := s[1 : len(s)-1]
 		if len(s) > 0 && s != "" {
-			d := strings.Split(s,",")
-			for i,n := range d {
-				v, err := strconv.ParseInt(n,10,32)
+			d := strings.Split(s, ",")
+			for i, n := range d {
+				v, err := strconv.ParseInt(n, 10, 32)
 				if err != nil {
-					return Dimension{}, xerrors.Errorf("bad dimansion value; %w",  err)
+					return Dimension{}, xerrors.Errorf("bad dimansion value; %w", err)
 				}
 				r.Shape[i] = int(v)
-				r.Len = i+1
+				r.Len = i + 1
 			}
 		}
 	}

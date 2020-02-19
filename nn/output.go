@@ -6,11 +6,11 @@ import (
 )
 
 type Output struct {
-	Name string
+	Name  string
 	Round int
-	Axis int
+	Axis  int
 	Begin int
-	End int
+	End   int
 }
 
 func (ly *Output) Combine(a *mx.Symbol) *mx.Symbol {
@@ -23,9 +23,8 @@ func (ly *Output) Combine(a *mx.Symbol) *mx.Symbol {
 	}
 	out := a
 	if ly.Begin != ly.End {
-		a = mx.Slice(a,ly.Axis,ly.Begin,ly.End)
+		a = mx.Slice(a, ly.Axis, ly.Begin, ly.End)
 		a.SetName(name)
 	}
-	return mx.Bound(out,mx.Output(a, name))
+	return mx.Bound(out, mx.Output(a, name))
 }
-

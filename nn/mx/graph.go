@@ -26,10 +26,10 @@ type Graph struct {
 	Ctx   Context
 	Dtype Dtype
 
-	Input   *NDArray  // network input referencing to Params["_input"]
-	Output  *NDArray  // referencing to Outputs["_output_output"]
-	Loss    *NDArray  // referencing to Outputs["_loss_loss"]
-	Label   *NDArray  // loss function label referencing to Params["_label"]
+	Input  *NDArray // network input referencing to Params["_input"]
+	Output *NDArray // referencing to Outputs["_output_output"]
+	Loss   *NDArray // referencing to Outputs["_loss_loss"]
+	Label  *NDArray // loss function label referencing to Params["_label"]
 
 	Outputs  map[string]*NDArray  // referencing to executor outputs except loss
 	Params   map[string]*NDArray  // network parameters
@@ -102,7 +102,9 @@ func (g *Graph) allocate(shapes map[string][]int) {
 	for n, s := range shapes {
 		_, ok := g.Params[n]
 		if !ok {
-			if s2, ok := g.Shapes[n]; ok { s = s2.Slice() }
+			if s2, ok := g.Shapes[n]; ok {
+				s = s2.Slice()
+			}
 			a := g.Ctx.Array(g.Dtype, Dim(s...))
 			g.Params[n] = a
 		}
@@ -143,15 +145,15 @@ func (g *Graph) bind() {
 	g.allocate(shapes)
 	args := make([]capi.NDArrayHandle, len(names))
 	grads := make([]capi.NDArrayHandle, len(names))
-	g.Input  = g.Params["_input"]
-	g.Label  = g.Params["_label"]
+	g.Input = g.Params["_input"]
+	g.Label = g.Params["_label"]
 
 	for i, name := range names {
 		p := g.Params[name]
 		if p != nil {
 			args[i] = p.handle
 			if g.symLast != g.symOut && g.Autograd[name] {
-				a := g.Ctx.Array(g.Dtype,p.Dim())
+				a := g.Ctx.Array(g.Dtype, p.Dim())
 				g.Grads[name] = a
 				grads[i] = a.handle
 			}
@@ -172,7 +174,7 @@ func (g *Graph) bind() {
 	g.Outputs = make(map[string]*NDArray)
 	for i, n := range names {
 		v := o[i]
-		if strings.HasSuffix(n,"_output") {
+		if strings.HasSuffix(n, "_output") {
 			n = strings.TrimSuffix(n, "_output")
 		} else {
 			n = strings.TrimSuffix(n, "_loss")
@@ -220,17 +222,17 @@ func Compose(
 		symloss := loss.Loss(sym)
 		Loss := MakeLoss(symloss)
 		Loss.SetName("_loss")
-		_,_ = g.compose(symloss)
+		_, _ = g.compose(symloss)
 		others := util.ValsOf(g.outputs).([]*Symbol)
-		outs := append([]*Symbol{Out,Loss},others...)
+		outs := append([]*Symbol{Out, Loss}, others...)
 		out = g.compose(Group(outs...))
 		if len(others) > 0 {
-			outs := append([]*Symbol{Out},others...)
+			outs := append([]*Symbol{Out}, others...)
 			last = g.compose(Group(outs...))
 		}
 	} else if len(g.outputs) > 0 {
 		others := util.ValsOf(g.outputs).([]*Symbol)
-		outs := append([]*Symbol{Out},others...)
+		outs := append([]*Symbol{Out}, others...)
 		last = g.compose(Group(outs...))
 		out = last
 	}
@@ -295,8 +297,8 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 		}
 		return h
 	case OpOutput_:
-		n := "*"+s.name
-		if _,ok := g.outputs[n]; !ok {
+		n := "*" + s.name
+		if _, ok := g.outputs[n]; !ok {
 			g.outputs[n] = BlockGrad(s.args[0]).SetName(n)
 		}
 		return g.compose(s.args[0])
@@ -345,8 +347,8 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 		}
 
 		if s.output {
-			n := "*"+name
-			if _,ok := g.outputs[n]; !ok {
+			n := "*" + name
+			if _, ok := g.outputs[n]; !ok {
 				g.outputs[n] = BlockGrad(s).SetName(n)
 			}
 		}
@@ -370,7 +372,7 @@ func (g *Graph) InitParam(name string) {
 	}
 }
 
-func (g *Graph) Initialize(inite func(*NDArray,string)) {
+func (g *Graph) Initialize(inite func(*NDArray, string)) {
 	keys := util.SortedDictKeys(g.Params)
 	for _, name := range keys {
 		if inite != nil {

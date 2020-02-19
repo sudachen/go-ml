@@ -27,4 +27,3 @@ func (ly *BatchNorm) Combine(in *mx.Symbol) *mx.Symbol {
 	out.SetName(ns)
 	return out
 }
-

@@ -6,5 +6,3 @@ type Metric interface {
 	Value() float32
 	Satisfy() bool
 }
-
-
