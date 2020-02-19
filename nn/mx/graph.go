@@ -2,7 +2,6 @@ package mx
 
 import (
 	"fmt"
-	"github.com/sudachen/go-dnn/fu"
 	"github.com/sudachen/go-ml/nn/mx/capi"
 	"github.com/sudachen/go-ml/util"
 	"runtime"
@@ -372,7 +371,7 @@ func (g *Graph) InitParam(name string) {
 }
 
 func (g *Graph) Initialize(inite func(*NDArray,string)) {
-	keys := fu.SortedDictKeys(g.Params)
+	keys := util.SortedDictKeys(g.Params)
 	for _, name := range keys {
 		if inite != nil {
 			param := g.Params[name]
