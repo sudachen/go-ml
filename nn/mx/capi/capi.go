@@ -1,69 +1,9 @@
 package capi
 
 /*
-#include <stdlib.h>
-#include <string.h>
-
-typedef void *NDArrayHandle;
-typedef void *AtomicSymbolCreator;
-typedef void *SymbolHandle;
-typedef void *ExecutorHandle;
-
-int (*MXImperativeInvoke)(AtomicSymbolCreator creator,
-                          int num_inputs,
-                          NDArrayHandle *inputs,
-                          int *num_outputs,
-                          NDArrayHandle **outputs,
-                          int num_params,
-                          const char **param_keys,
-                          const char **param_vals);
-
-int (*NNSymbolListInputNames)(SymbolHandle symbol,
-                              int option,
-                              unsigned int *out_size,
-                              const char ***out_str_array);
-
-int (*MXNDArrayFree)(NDArrayHandle);
-int (*MXSymbolFree)(SymbolHandle);
-int (*MXExecutorFree)(ExecutorHandle);
-char* (*MXGetLastError)();
-
-static int imperative_invoke1_inplace(AtomicSymbolCreator ent, NDArrayHandle out, int ano, const char **keys, const char **vals) {
-	NDArrayHandle* out1[1] = {&out};
-	int nout = 1;
-	int err = MXImperativeInvoke(ent, 0, NULL, &nout, &out1[0], ano, keys, vals);
-	return err;
-}
-
-static int imperative_invoke1_inout(AtomicSymbolCreator ent, NDArrayHandle in, NDArrayHandle out, int ano, const char **keys, const char **vals) {
-	NDArrayHandle* out1[1] = {&out};
-	int nout = 1;
-	int err = MXImperativeInvoke(ent, 1, &in, &nout, &out1[0], ano, keys, vals);
-	return err;
-}
-
-static int imperative_invokeN_inout(
-	AtomicSymbolCreator ent,
-	NDArrayHandle out,
-	int ano, const char **keys, const char **vals,
-	NDArrayHandle in0, NDArrayHandle in1,
-	NDArrayHandle in2, NDArrayHandle in3)
-{
-	int nin = 0;
-	NDArrayHandle* out1[1] = {&out};
-	NDArrayHandle inN[4] = {in0,in1,in2,in3};
-	for ( ;nin<4 && inN[nin]; ++nin) {}
-	int nout = 1;
-	int err = MXImperativeInvoke(ent, nin, inN, &nout, &out1[0], ano, keys, vals);
-	return err;
-}
-
-int (*MXSymbolListArguments)(SymbolHandle symbol,
-                             mx_uint *out_size,
-                             const char ***out_str_array);
-
-
-
+#cgo CFLAGS:
+#cgo LDFLAGS: -L/opt/mxnet/lib -lmxnet -Wl,-rpath=/opt/mxnet/lib
+#include "capi.h"
 */
 import "C"
 
@@ -207,7 +147,7 @@ func NewNDArrayHandle(devType int, devNo int, dtype int, shape [4]int, slen int)
 	var a C.NDArrayHandle
 	s := [4]C.uint{C.uint(shape[0]), C.uint(shape[1]), C.uint(shape[2]), C.uint(shape[3])}
 	if e := C.MXNDArrayCreateEx(&s[0], C.uint(slen), C.int(devType), C.int(devNo), 0, C.int(dtype), &a); e != 0 {
-		panic(fmt.Sprintf("failed to create ndarry: %v", mxLastError()))
+		panic(fmt.Sprintf("failed to create array: %v", mxLastError()))
 	}
 	return NDArrayHandle(a)
 }

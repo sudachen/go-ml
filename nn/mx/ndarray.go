@@ -117,7 +117,6 @@ var rtypemap = map[reflect.Type]Dtype{
 }
 
 func copyTo(s reflect.Value, n int, v0 reflect.Value, dt reflect.Type) int {
-	var err error
 	if v0.Kind() == reflect.Interface {
 		v0 = v0.Elem()
 	}

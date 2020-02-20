@@ -122,13 +122,3 @@ func Test_Convert(t *testing.T) {
 	assert.DeepEqual(t, util.Convert(reflect.ValueOf(int(1)), internal.StringType), "1")
 }
 
-func Test_MinMax(t *testing.T) {
-	assert.Assert(t, util.Min(reflect.ValueOf([]int{1, 2, 3, 4, 5})).Int() == 1)
-	assert.Assert(t, util.Max(reflect.ValueOf([]int{1, 2, 3, 4, 5})).Int() == 5)
-	assert.Assert(t, cmp.Panics(func() {
-		util.Min(reflect.ValueOf(1))
-	}))
-	assert.Assert(t, cmp.Panics(func() {
-		util.Max(reflect.ValueOf(1))
-	}))
-}

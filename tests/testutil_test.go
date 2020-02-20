@@ -1,9 +1,12 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/util"
 	"gotest.tools/assert"
+	"gotest.tools/assert/cmp"
+	"strings"
 	"testing"
 )
 
@@ -58,4 +61,22 @@ func assertTrData(t *testing.T, q *tables.Table) {
 				"Rate": r.Rate,
 			})
 	}
+}
+
+func PanicWith(text string, f func()) cmp.Comparison {
+	return func() (result cmp.Result) {
+		defer func() {
+			if err := recover(); err != nil {
+				s := fmt.Sprint(err)
+				if strings.Index(s,text) >= 0 {
+					result = cmp.ResultSuccess
+					return
+				}
+				result = cmp.ResultFailure("panic `"+s+"` does not contain `"+text+"`")
+			}
+		}()
+		f()
+		return cmp.ResultFailure("did not panic")
+	}
+
 }

@@ -64,13 +64,11 @@ func (ly *Activation) Combine(in *mx.Symbol) *mx.Symbol {
 	}
 	out := in
 	if ly.BatchNorm {
-		if out, g, err = (&BatchNorm{Name: ly.Name}).Combine(in, g...); err != nil {
-			return nil, nil, err
-		}
+		out = (&BatchNorm{Name: ly.Name}).Combine(in)
 	}
 	if ly.Function != nil {
 		out = ly.Function(out)
 	}
 	out.SetName(ns)
-	return out, g, nil
+	return out
 }

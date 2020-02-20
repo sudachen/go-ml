@@ -2,8 +2,8 @@ package mx
 
 import (
 	"fmt"
+	"github.com/sudachen/go-fp/fu"
 	"github.com/sudachen/go-ml/nn/mx/capi"
-	"github.com/sudachen/go-ml/util"
 	"runtime"
 	"strings"
 )
@@ -222,8 +222,8 @@ func Compose(
 		symloss := loss.Loss(sym)
 		Loss := MakeLoss(symloss)
 		Loss.SetName("_loss")
-		_, _ = g.compose(symloss)
-		others := util.ValsOf(g.outputs).([]*Symbol)
+		_ = g.compose(symloss)
+		others := fu.ValsOf(g.outputs).([]*Symbol)
 		outs := append([]*Symbol{Out, Loss}, others...)
 		out = g.compose(Group(outs...))
 		if len(others) > 0 {
@@ -231,7 +231,7 @@ func Compose(
 			last = g.compose(Group(outs...))
 		}
 	} else if len(g.outputs) > 0 {
-		others := util.ValsOf(g.outputs).([]*Symbol)
+		others := fu.ValsOf(g.outputs).([]*Symbol)
 		outs := append([]*Symbol{Out}, others...)
 		last = g.compose(Group(outs...))
 		out = last
@@ -373,7 +373,7 @@ func (g *Graph) InitParam(name string) {
 }
 
 func (g *Graph) Initialize(inite func(*NDArray, string)) {
-	keys := util.SortedDictKeys(g.Params)
+	keys := fu.SortedKeysOf(g.Params).([]string)
 	for _, name := range keys {
 		if inite != nil {
 			param := g.Params[name]

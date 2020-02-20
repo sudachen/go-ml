@@ -52,7 +52,7 @@ func (st *NfoState) Preset(net *nn.Network) (opt nn.Optimizer, err error) {
 			return
 		}
 	}
-	st.Optimizer.Init(st.Epoch)
+	return st.Optimizer.Init(st.Epoch), nil
 }
 
 func (st *NfoState) LogBatchLoss(loss float32) (err error) {

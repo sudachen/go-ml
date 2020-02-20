@@ -5,6 +5,7 @@ package tables
 
 import (
 	"fmt"
+	"github.com/sudachen/go-fp/fu"
 	"github.com/sudachen/go-ml/util"
 	"math/bits"
 	"reflect"
@@ -155,7 +156,7 @@ func New(o interface{}) *Table {
 
 	case reflect.Map: // New(map[string]interface{}{})
 		m := o.(map[string]interface{})
-		names := util.SortedDictKeys(m)
+		names := fu.SortedKeysOf(m).([]string)
 		columns := make([]reflect.Value, len(names), len(names))
 		l := reflect.ValueOf(m[names[0]]).Len()
 

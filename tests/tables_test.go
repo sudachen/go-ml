@@ -403,20 +403,6 @@ func Test_Col6(t *testing.T) {
 	assert.Assert(t, c.Min().Interface().(*ColR4).d == "col4:0")
 }
 
-func Test_Less1(t *testing.T) {
-	a := map[int]interface{}{0: 0}
-	assert.Assert(t, cmp.Panics(func() {
-		util.Less(reflect.ValueOf(a), reflect.ValueOf(a))
-	}))
-	assert.Assert(t, cmp.Panics(func() {
-		util.Less(reflect.ValueOf(1), reflect.ValueOf(""))
-	}))
-	assert.Assert(t, util.Less(reflect.ValueOf([2]int{0, 1}), reflect.ValueOf([2]int{0, 2})))
-	assert.Assert(t, cmp.Panics(func() {
-		util.Less(reflect.ValueOf([2]int{0, 1}), reflect.ValueOf([1]int{0}))
-	}))
-}
-
 func Test_Lazy1(t *testing.T) {
 	q := tables.FillUp(lazy.New(trList))
 	assertTrData(t, q)

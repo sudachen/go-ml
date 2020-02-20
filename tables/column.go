@@ -3,6 +3,7 @@ package tables
 import (
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/util"
+	"github.com/sudachen/go-fp/fu"
 	"reflect"
 )
 
@@ -428,7 +429,7 @@ Max returns cell with max column' maximal value
 	t.Col("Rate").Max().Float() -> 1.5
 */
 func (c *Column) Max() Cell {
-	return Cell{util.Max(c.column)}
+	return Cell{fu.MaxValue(c.column)}
 }
 
 /*
@@ -439,7 +440,7 @@ Min returns cell with column' minimal value
 	t.Col("Rate").Min().Float() -> 1.2
 */
 func (c *Column) Min() Cell {
-	return Cell{util.Min(c.column)}
+	return Cell{fu.MinValue(c.column)}
 }
 
 /*
@@ -449,7 +450,7 @@ MaxIndex returns index of first column' maximal value
 	t.Col("Age").MaxIndex() -> 1
 */
 func (c *Column) MaxIndex() int {
-	return util.MaxIndex(c.column)
+	return fu.MaxIndex(c.column)
 }
 
 /*
@@ -459,7 +460,7 @@ MinIndex returns index of first column' minimal value
 	t.Col("Age").MinIndex() -> 0
 */
 func (c *Column) MinIndex() int {
-	return util.MinIndex(c.column)
+	return fu.MinIndex(c.column)
 }
 
 /*
