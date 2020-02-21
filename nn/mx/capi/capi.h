@@ -125,3 +125,42 @@ static int imperative_invokeN_inout(
 	return err;
 }
 
+#define DEFINE_JUMPER(x) \
+        void *_godl_##x = (void*)0; \
+        __asm__(".global "#x"\n\t"#x":\n\tmovq _godl_"#x"(%rip),%rax\n\tjmp *%rax\n")
+
+DEFINE_JUMPER(MXGetVersion);
+DEFINE_JUMPER(MXGetLastError);
+DEFINE_JUMPER(MXGetGPUCount);
+
+DEFINE_JUMPER(MXNDArrayCreateEx);
+DEFINE_JUMPER(MXNDArrayFree);
+DEFINE_JUMPER(MXNDArrayGetDType);
+DEFINE_JUMPER(MXNDArrayGetShape);
+DEFINE_JUMPER(MXNDArraySyncCopyFromCPU);
+DEFINE_JUMPER(MXNDArraySyncCopyToCPU);
+
+DEFINE_JUMPER(MXExecutorBackward);
+DEFINE_JUMPER(MXExecutorForward);
+DEFINE_JUMPER(MXExecutorBind);
+DEFINE_JUMPER(MXExecutorFree);
+DEFINE_JUMPER(MXExecutorOutputs);
+
+DEFINE_JUMPER(MXRandomSeed);
+DEFINE_JUMPER(MXRandomSeedContext);
+
+DEFINE_JUMPER(MXSymbolCompose);
+DEFINE_JUMPER(MXSymbolCreateAtomicSymbol);
+DEFINE_JUMPER(MXSymbolCreateGroup);
+DEFINE_JUMPER(MXSymbolCreateVariable);
+DEFINE_JUMPER(MXSymbolFree);
+DEFINE_JUMPER(MXSymbolGetAtomicSymbolName);
+DEFINE_JUMPER(MXSymbolGetInternals);
+DEFINE_JUMPER(MXSymbolInferShape);
+DEFINE_JUMPER(MXSymbolListArguments);
+DEFINE_JUMPER(MXSymbolListAtomicSymbolCreators);
+DEFINE_JUMPER(MXSymbolListAuxiliaryStates);
+DEFINE_JUMPER(MXSymbolListOutputs);
+DEFINE_JUMPER(MXSymbolSaveToJSON);
+
+DEFINE_JUMPER(MXImperativeInvoke);

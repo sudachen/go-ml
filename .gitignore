@@ -4,3 +4,5 @@ c.out
 gocov.txt
 tests.test
 /go-fp/
+/go-dl/
+

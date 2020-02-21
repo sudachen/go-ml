@@ -1,16 +1,16 @@
 package capi
 
 /*
-#cgo CFLAGS:
-#cgo LDFLAGS: -L/opt/mxnet/lib -lmxnet -Wl,-rpath=/opt/mxnet/lib
 #include "capi.h"
 */
 import "C"
 
 import (
 	"fmt"
+	"github.com/sudachen/go-dl/dl"
 	"github.com/sudachen/go-ml/logger"
 	"github.com/sudachen/go-ml/util"
+	"runtime"
 	"unsafe"
 )
 
@@ -47,6 +47,61 @@ func mxLastError() string {
 }
 
 func init() {
+
+	var so dl.SO
+	dlVerbose := dl.Verbose(func(text string, verbosity int){
+		if verbosity < 2 {
+			// verbosity 2 relates to detailed information
+			fmt.Println(text)
+		}
+	})
+	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64"{
+		so = dl.Load(
+			dl.Custom("/opt/mxnet/lib/libmxnet.so"),
+			dl.Cached("dl/go-ml/libmxnet.so"),
+			dl.System("libmxnet.so"),
+			dl.LzmaExternal("https://github.com/sudachen/mxnet/releases/download/1.5.0-mkldnn-static/libmxnet_cpu_lin64.lzma"),
+			dlVerbose)
+	} else if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
+		so = dl.Load(
+			dl.Cached("dl/go-ml/mxnet15.dll"),
+			dl.System("mxnet15.dll"),
+			dl.LzmaExternal("https://github.com/sudachen/mxnet/releases/download/1.5.0-mkldnn-static/libmxnet_cpu_win64.lzma"),
+			dlVerbose)
+	} else {
+		panic("unsupported platfrom")
+	}
+
+	so.Bind("MXGetVersion",unsafe.Pointer(&C._godl_MXGetVersion))
+	so.Bind("MXGetLastError",unsafe.Pointer(&C._godl_MXGetLastError))
+	so.Bind("MXGetGPUCount",unsafe.Pointer(&C._godl_MXGetGPUCount))
+	so.Bind("MXNDArrayCreateEx",unsafe.Pointer(&C._godl_MXNDArrayCreateEx))
+	so.Bind("MXNDArrayFree",unsafe.Pointer(&C._godl_MXNDArrayFree))
+	so.Bind("MXNDArrayGetDType",unsafe.Pointer(&C._godl_MXNDArrayGetDType))
+	so.Bind("MXNDArrayGetShape",unsafe.Pointer(&C._godl_MXNDArrayGetShape))
+	so.Bind("MXNDArraySyncCopyFromCPU",unsafe.Pointer(&C._godl_MXNDArraySyncCopyFromCPU))
+	so.Bind("MXNDArraySyncCopyToCPU",unsafe.Pointer(&C._godl_MXNDArraySyncCopyToCPU))
+	so.Bind("MXExecutorBackward",unsafe.Pointer(&C._godl_MXExecutorBackward))
+	so.Bind("MXExecutorForward",unsafe.Pointer(&C._godl_MXExecutorForward))
+	so.Bind("MXExecutorBind",unsafe.Pointer(&C._godl_MXExecutorBind))
+	so.Bind("MXExecutorFree",unsafe.Pointer(&C._godl_MXExecutorFree))
+	so.Bind("MXExecutorOutputs",unsafe.Pointer(&C._godl_MXExecutorOutputs))
+	so.Bind("MXRandomSeed",unsafe.Pointer(&C._godl_MXRandomSeed))
+	so.Bind("MXRandomSeedContext",unsafe.Pointer(&C._godl_MXRandomSeedContext))
+	so.Bind("MXSymbolCompose",unsafe.Pointer(&C._godl_MXSymbolCompose))
+	so.Bind("MXSymbolCreateAtomicSymbol",unsafe.Pointer(&C._godl_MXSymbolCreateAtomicSymbol))
+	so.Bind("MXSymbolCreateGroup",unsafe.Pointer(&C._godl_MXSymbolCreateGroup))
+	so.Bind("MXSymbolCreateVariable",unsafe.Pointer(&C._godl_MXSymbolCreateVariable))
+	so.Bind("MXSymbolFree",unsafe.Pointer(&C._godl_MXSymbolFree))
+	so.Bind("MXSymbolGetAtomicSymbolName",unsafe.Pointer(&C._godl_MXSymbolGetAtomicSymbolName))
+	so.Bind("MXSymbolGetInternals",unsafe.Pointer(&C._godl_MXSymbolGetInternals))
+	so.Bind("MXSymbolInferShape",unsafe.Pointer(&C._godl_MXSymbolInferShape))
+	so.Bind("MXSymbolListArguments",unsafe.Pointer(&C._godl_MXSymbolListArguments))
+	so.Bind("MXSymbolListAtomicSymbolCreators",unsafe.Pointer(&C._godl_MXSymbolListAtomicSymbolCreators))
+	so.Bind("MXSymbolListAuxiliaryStates",unsafe.Pointer(&C._godl_MXSymbolListAuxiliaryStates))
+	so.Bind("MXSymbolListOutputs",unsafe.Pointer(&C._godl_MXSymbolListOutputs))
+	so.Bind("MXSymbolSaveToJSON",unsafe.Pointer(&C._godl_MXSymbolSaveToJSON))
+	so.Bind("MXImperativeInvoke",unsafe.Pointer(&C._godl_MXImperativeInvoke))
 
 	var v C.int
 	C.MXGetVersion(&v)
