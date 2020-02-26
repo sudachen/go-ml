@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/sudachen/go-fp/fu"
 	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
-	"github.com/sudachen/go-ml/util"
 	"golang.org/x/xerrors"
 	"reflect"
 	"strings"
@@ -52,7 +52,7 @@ func sqlSelect(rows *sql.Rows, opts ...interface{}) (*tables.Table, error) {
 		return nil, xerrors.Errorf("get names error: %w", err)
 	}
 
-	na := make([]util.Bits, len(ns))
+	na := make([]internal.Bits, len(ns))
 	columns := make([]reflect.Value, len(ns))
 
 	x := make([]interface{}, len(columns))
@@ -331,7 +331,7 @@ func SqlInsert(t *tables.Table, tx *sql.Tx, table string, opts ...interface{}) e
 	isPk := make([]bool, len(raw.Names))
 	if ifExists == InsertUpdateIfExists && len(pk) > 0 {
 		for j := range raw.Names {
-			if util.IndexOf(raw.Names[j], pk) >= 0 {
+			if mlutil.IndexOf(raw.Names[j], pk) >= 0 {
 				isPk[j] = true
 			}
 		}

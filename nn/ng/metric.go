@@ -100,7 +100,7 @@ func (g *DetailedMetric) Collect(data, label []float32) {
 	}
 	var m float64
 	for i, v := range label {
-		q := f(fu.Fnzf(g.Scale, 1), v, data[i])
+		q := f(fu.Fnzr(g.Scale, 1), v, data[i])
 		g.Vals[i] += q
 		g.Count[i]++
 		m += q

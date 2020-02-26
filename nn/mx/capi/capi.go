@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/sudachen/go-dl/dl"
 	"github.com/sudachen/go-ml/logger"
-	"github.com/sudachen/go-ml/util"
+	"github.com/sudachen/go-ml/mlutil"
 	"runtime"
 	"unsafe"
 )
@@ -49,13 +49,13 @@ func mxLastError() string {
 func init() {
 
 	var so dl.SO
-	dlVerbose := dl.Verbose(func(text string, verbosity int){
+	dlVerbose := dl.Verbose(func(text string, verbosity int) {
 		if verbosity < 2 {
 			// verbosity 2 relates to detailed information
 			fmt.Println(text)
 		}
 	})
-	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64"{
+	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
 		so = dl.Load(
 			dl.Custom("/opt/mxnet/lib/libmxnet.so"),
 			dl.Cached("dl/go-ml/libmxnet.so"),
@@ -72,36 +72,36 @@ func init() {
 		panic("unsupported platfrom")
 	}
 
-	so.Bind("MXGetVersion",unsafe.Pointer(&C._godl_MXGetVersion))
-	so.Bind("MXGetLastError",unsafe.Pointer(&C._godl_MXGetLastError))
-	so.Bind("MXGetGPUCount",unsafe.Pointer(&C._godl_MXGetGPUCount))
-	so.Bind("MXNDArrayCreateEx",unsafe.Pointer(&C._godl_MXNDArrayCreateEx))
-	so.Bind("MXNDArrayFree",unsafe.Pointer(&C._godl_MXNDArrayFree))
-	so.Bind("MXNDArrayGetDType",unsafe.Pointer(&C._godl_MXNDArrayGetDType))
-	so.Bind("MXNDArrayGetShape",unsafe.Pointer(&C._godl_MXNDArrayGetShape))
-	so.Bind("MXNDArraySyncCopyFromCPU",unsafe.Pointer(&C._godl_MXNDArraySyncCopyFromCPU))
-	so.Bind("MXNDArraySyncCopyToCPU",unsafe.Pointer(&C._godl_MXNDArraySyncCopyToCPU))
-	so.Bind("MXExecutorBackward",unsafe.Pointer(&C._godl_MXExecutorBackward))
-	so.Bind("MXExecutorForward",unsafe.Pointer(&C._godl_MXExecutorForward))
-	so.Bind("MXExecutorBind",unsafe.Pointer(&C._godl_MXExecutorBind))
-	so.Bind("MXExecutorFree",unsafe.Pointer(&C._godl_MXExecutorFree))
-	so.Bind("MXExecutorOutputs",unsafe.Pointer(&C._godl_MXExecutorOutputs))
-	so.Bind("MXRandomSeed",unsafe.Pointer(&C._godl_MXRandomSeed))
-	so.Bind("MXRandomSeedContext",unsafe.Pointer(&C._godl_MXRandomSeedContext))
-	so.Bind("MXSymbolCompose",unsafe.Pointer(&C._godl_MXSymbolCompose))
-	so.Bind("MXSymbolCreateAtomicSymbol",unsafe.Pointer(&C._godl_MXSymbolCreateAtomicSymbol))
-	so.Bind("MXSymbolCreateGroup",unsafe.Pointer(&C._godl_MXSymbolCreateGroup))
-	so.Bind("MXSymbolCreateVariable",unsafe.Pointer(&C._godl_MXSymbolCreateVariable))
-	so.Bind("MXSymbolFree",unsafe.Pointer(&C._godl_MXSymbolFree))
-	so.Bind("MXSymbolGetAtomicSymbolName",unsafe.Pointer(&C._godl_MXSymbolGetAtomicSymbolName))
-	so.Bind("MXSymbolGetInternals",unsafe.Pointer(&C._godl_MXSymbolGetInternals))
-	so.Bind("MXSymbolInferShape",unsafe.Pointer(&C._godl_MXSymbolInferShape))
-	so.Bind("MXSymbolListArguments",unsafe.Pointer(&C._godl_MXSymbolListArguments))
-	so.Bind("MXSymbolListAtomicSymbolCreators",unsafe.Pointer(&C._godl_MXSymbolListAtomicSymbolCreators))
-	so.Bind("MXSymbolListAuxiliaryStates",unsafe.Pointer(&C._godl_MXSymbolListAuxiliaryStates))
-	so.Bind("MXSymbolListOutputs",unsafe.Pointer(&C._godl_MXSymbolListOutputs))
-	so.Bind("MXSymbolSaveToJSON",unsafe.Pointer(&C._godl_MXSymbolSaveToJSON))
-	so.Bind("MXImperativeInvoke",unsafe.Pointer(&C._godl_MXImperativeInvoke))
+	so.Bind("MXGetVersion", unsafe.Pointer(&C._godl_MXGetVersion))
+	so.Bind("MXGetLastError", unsafe.Pointer(&C._godl_MXGetLastError))
+	so.Bind("MXGetGPUCount", unsafe.Pointer(&C._godl_MXGetGPUCount))
+	so.Bind("MXNDArrayCreateEx", unsafe.Pointer(&C._godl_MXNDArrayCreateEx))
+	so.Bind("MXNDArrayFree", unsafe.Pointer(&C._godl_MXNDArrayFree))
+	so.Bind("MXNDArrayGetDType", unsafe.Pointer(&C._godl_MXNDArrayGetDType))
+	so.Bind("MXNDArrayGetShape", unsafe.Pointer(&C._godl_MXNDArrayGetShape))
+	so.Bind("MXNDArraySyncCopyFromCPU", unsafe.Pointer(&C._godl_MXNDArraySyncCopyFromCPU))
+	so.Bind("MXNDArraySyncCopyToCPU", unsafe.Pointer(&C._godl_MXNDArraySyncCopyToCPU))
+	so.Bind("MXExecutorBackward", unsafe.Pointer(&C._godl_MXExecutorBackward))
+	so.Bind("MXExecutorForward", unsafe.Pointer(&C._godl_MXExecutorForward))
+	so.Bind("MXExecutorBind", unsafe.Pointer(&C._godl_MXExecutorBind))
+	so.Bind("MXExecutorFree", unsafe.Pointer(&C._godl_MXExecutorFree))
+	so.Bind("MXExecutorOutputs", unsafe.Pointer(&C._godl_MXExecutorOutputs))
+	so.Bind("MXRandomSeed", unsafe.Pointer(&C._godl_MXRandomSeed))
+	so.Bind("MXRandomSeedContext", unsafe.Pointer(&C._godl_MXRandomSeedContext))
+	so.Bind("MXSymbolCompose", unsafe.Pointer(&C._godl_MXSymbolCompose))
+	so.Bind("MXSymbolCreateAtomicSymbol", unsafe.Pointer(&C._godl_MXSymbolCreateAtomicSymbol))
+	so.Bind("MXSymbolCreateGroup", unsafe.Pointer(&C._godl_MXSymbolCreateGroup))
+	so.Bind("MXSymbolCreateVariable", unsafe.Pointer(&C._godl_MXSymbolCreateVariable))
+	so.Bind("MXSymbolFree", unsafe.Pointer(&C._godl_MXSymbolFree))
+	so.Bind("MXSymbolGetAtomicSymbolName", unsafe.Pointer(&C._godl_MXSymbolGetAtomicSymbolName))
+	so.Bind("MXSymbolGetInternals", unsafe.Pointer(&C._godl_MXSymbolGetInternals))
+	so.Bind("MXSymbolInferShape", unsafe.Pointer(&C._godl_MXSymbolInferShape))
+	so.Bind("MXSymbolListArguments", unsafe.Pointer(&C._godl_MXSymbolListArguments))
+	so.Bind("MXSymbolListAtomicSymbolCreators", unsafe.Pointer(&C._godl_MXSymbolListAtomicSymbolCreators))
+	so.Bind("MXSymbolListAuxiliaryStates", unsafe.Pointer(&C._godl_MXSymbolListAuxiliaryStates))
+	so.Bind("MXSymbolListOutputs", unsafe.Pointer(&C._godl_MXSymbolListOutputs))
+	so.Bind("MXSymbolSaveToJSON", unsafe.Pointer(&C._godl_MXSymbolSaveToJSON))
+	so.Bind("MXImperativeInvoke", unsafe.Pointer(&C._godl_MXImperativeInvoke))
 
 	var v C.int
 	C.MXGetVersion(&v)
@@ -128,7 +128,7 @@ func init() {
 	}
 
 	for i := 0; i < int(ascn); i++ {
-		a := *(*C.AtomicSymbolCreator)(util.Index(i, ascv))
+		a := *(*C.AtomicSymbolCreator)(mlutil.Index(i, ascv))
 		var n *C.char
 		if e := C.MXSymbolGetAtomicSymbolName(a, &n); e != 0 {
 			panic(fmt.Sprintf("failed to gather name for symbol %x", a))
@@ -149,7 +149,7 @@ func init() {
 	if notInit {
 		logger.Infof("available operators:")
 		for i := 0; i < int(ascn); i++ {
-			a := *(*C.AtomicSymbolCreator)(util.Index(i, ascv))
+			a := *(*C.AtomicSymbolCreator)(mlutil.Index(i, ascv))
 			var n *C.char
 			if e := C.MXSymbolGetAtomicSymbolName(a, &n); e != 0 {
 				panic(fmt.Sprintf("failed to gather name for symbol %x", a))
@@ -314,7 +314,7 @@ func ListNames(handle SymbolHandle, kind int) []string {
 	}
 
 	name_at := func(i int) string {
-		return C.GoString(*(**C.char)(util.Index(i, out_ns)))
+		return C.GoString(*(**C.char)(mlutil.Index(i, out_ns)))
 	}
 
 	r = make([]string, int(out_nn))
@@ -379,12 +379,12 @@ func InferShapes(handle SymbolHandle, with map[string][]int, selector int) map[s
 	}
 
 	shape_at := func(i int, d *C.uint, s **C.uint) []int {
-		n := int(*(*C.uint)(util.Index(i, d)))
+		n := int(*(*C.uint)(mlutil.Index(i, d)))
 		r := make([]int, n)
-		ps := *(**C.uint)(util.Index(i, s))
+		ps := *(**C.uint)(mlutil.Index(i, s))
 
 		for j := 0; j < n; j++ {
-			r[j] = int(*(*C.int)(util.Index(j, ps)))
+			r[j] = int(*(*C.int)(mlutil.Index(j, ps)))
 		}
 
 		return r
@@ -498,7 +498,7 @@ func FillInfo(nfo *NDArrayInfo) {
 	}
 	nfo.Dim = make([]int, int(dn))
 	for i := range nfo.Dim {
-		nfo.Dim[i] = int(*(*C.int)(util.Index(i, ds)))
+		nfo.Dim[i] = int(*(*C.int)(mlutil.Index(i, ds)))
 	}
 }
 
@@ -513,7 +513,7 @@ func GetOutputs(exec ExecutorHandle) []NDArrayInfo {
 	}
 	r := make([]NDArrayInfo, int(n))
 	for i := range r {
-		r[i].Handle = *(*NDArrayHandle)(util.Index(i, a))
+		r[i].Handle = *(*NDArrayHandle)(mlutil.Index(i, a))
 		FillInfo(&r[i])
 	}
 	return r

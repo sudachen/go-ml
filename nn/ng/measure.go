@@ -2,8 +2,8 @@ package ng
 
 import (
 	"fmt"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/nn"
-	"github.com/sudachen/go-ml/util"
 	"time"
 )
 
@@ -39,6 +39,6 @@ func Measure(net *nn.Network, batchs interface{}, metric nn.Metric, verbosity Ve
 
 	w := net.Input.Len(0)
 
-	verbose(fmt.Sprintf("Accuracy over %d*%d batchs: %v", count, w, util.Round32(float32(metric.Value()), 3)), verbosity)
+	verbose(fmt.Sprintf("Accuracy over %d*%d batchs: %v", count, w, mlutil.Round32(metric.Value(), 3)), verbosity)
 	return metric.Satisfy(), nil
 }

@@ -7,8 +7,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/nn/ng"
-	"github.com/sudachen/go-ml/util"
 	"io"
 	"net/http"
 	"os"
@@ -108,7 +109,7 @@ type Dataset struct{}
 
 func (d Dataset) Open(batchSize int) (ng.Batchs, ng.Batchs, error) {
 	for _, v := range []*dsFile{&trainData, &trainLabel, &testData, &testLabel} {
-		if err := v.Download(util.CacheDir(cacheDir)); err != nil {
+		if err := v.Download(fu.CacheDir(cacheDir)); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -138,7 +139,7 @@ type Batchs struct {
 }
 
 func (b *Batchs) Randomize(seed int) {
-	b.RndIndex = util.RandomIndex(b.Batchs, seed)
+	b.RndIndex = mlutil.RandomIndex(b.Batchs, seed)
 }
 
 func (b *Batchs) Load(dataFile, labelFile *dsFile) error {
@@ -147,13 +148,13 @@ func (b *Batchs) Load(dataFile, labelFile *dsFile) error {
 		err         error
 	)
 
-	if data, err = dataFile.Load(util.CacheDir(cacheDir)); err != nil {
+	if data, err = dataFile.Load(fu.CacheDir(cacheDir)); err != nil {
 		return err
 	}
 	if 0x00000803 != binary.BigEndian.Uint32(data) {
 		return fmt.Errorf("not mnist data file")
 	}
-	if label, err = labelFile.Load(util.CacheDir(cacheDir)); err != nil {
+	if label, err = labelFile.Load(fu.CacheDir(cacheDir)); err != nil {
 		return err
 	}
 	if 0x00000801 != binary.BigEndian.Uint32(label) {
@@ -213,5 +214,3 @@ func (b *Batchs) Reset() error {
 	b.Index = 0
 	return nil
 }
-
-

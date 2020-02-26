@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"github.com/sudachen/go-ml/util"
+	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
 )
 
@@ -27,7 +27,7 @@ func (t *Table) FillRow(i int, tp reflect.Type, p reflect.Value) {
 	fl := tp.NumField()
 	for fi := 0; fi < fl; fi++ {
 		n := tp.Field(fi).Name
-		j := util.IndexOf(n, t.raw.Names)
+		j := mlutil.IndexOf(n, t.raw.Names)
 		if j < 0 {
 			panic("table does not have field " + n)
 		}

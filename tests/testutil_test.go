@@ -2,8 +2,8 @@ package tests
 
 import (
 	"fmt"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
-	"github.com/sudachen/go-ml/util"
 	"gotest.tools/assert"
 	"gotest.tools/assert/cmp"
 	"strings"
@@ -22,13 +22,13 @@ func PrepareTable(t *testing.T) *tables.Table {
 		{"Petrov", 44, 1.5}})
 	assert.DeepEqual(t, q.Names(), []string{"Name", "Age", "Rate"})
 	assert.Assert(t, q.Len() == 2)
-	assert.DeepEqual(t, util.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
 			"Rate": float32(1.2),
 		})
-	assert.DeepEqual(t, util.MapInterface(q.Row(1)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(1)),
 		map[string]interface{}{
 			"Name": "Petrov",
 			"Age":  44,
@@ -54,7 +54,7 @@ func TrTable() *tables.Table {
 func assertTrData(t *testing.T, q *tables.Table) {
 	assert.Assert(t, q.Len() == len(trList))
 	for i, r := range trList {
-		assert.DeepEqual(t, util.MapInterface(q.Row(i)),
+		assert.DeepEqual(t, mlutil.MapInterface(q.Row(i)),
 			map[string]interface{}{
 				"Name": r.Name,
 				"Age":  r.Age,
@@ -68,11 +68,11 @@ func PanicWith(text string, f func()) cmp.Comparison {
 		defer func() {
 			if err := recover(); err != nil {
 				s := fmt.Sprint(err)
-				if strings.Index(s,text) >= 0 {
+				if strings.Index(s, text) >= 0 {
 					result = cmp.ResultSuccess
 					return
 				}
-				result = cmp.ResultFailure("panic `"+s+"` does not contain `"+text+"`")
+				result = cmp.ResultFailure("panic `" + s + "` does not contain `" + text + "`")
 			}
 		}()
 		f()

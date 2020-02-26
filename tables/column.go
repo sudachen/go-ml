@@ -1,15 +1,15 @@
 package tables
 
 import (
-	"github.com/sudachen/go-ml/internal"
-	"github.com/sudachen/go-ml/util"
 	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
 )
 
 type Column struct {
 	column reflect.Value
-	na     util.Bits
+	na     internal.Bits
 }
 
 /*
@@ -20,7 +20,7 @@ func Col(a interface{}) *Column {
 	if v.Kind() != reflect.Slice {
 		panic("anly slice is allowed as an argument")
 	}
-	return &Column{v, util.Bits{}}
+	return &Column{v, internal.Bits{}}
 }
 
 /*
@@ -134,7 +134,7 @@ Uint returns column' value converted to uint
 */
 func (c *Column) Uint(row int) uint {
 	v := c.column.Index(row)
-	return util.Convert(v, internal.UintType).(uint)
+	return mlutil.Convert(v, internal.UintType).(uint)
 }
 
 /*
@@ -145,7 +145,7 @@ Uint8 returns column' value converted to uint8
 */
 func (c *Column) Uint8(row int) uint8 {
 	v := c.column.Index(row)
-	return util.Convert(v, internal.Uint8Type).(uint8)
+	return mlutil.Convert(v, internal.Uint8Type).(uint8)
 }
 
 /*
@@ -156,7 +156,7 @@ Uint16 returns column' value converted to uint16
 */
 func (c *Column) Uint16(row int) uint16 {
 	v := c.column.Index(row)
-	return util.Convert(v, internal.Uint16Type).(uint16)
+	return mlutil.Convert(v, internal.Uint16Type).(uint16)
 }
 
 /*
@@ -167,7 +167,7 @@ Uint32 returns column' value converted to uint32
 */
 func (c *Column) Uint32(row int) uint32 {
 	v := c.column.Index(row)
-	return util.Convert(v, internal.Uint32Type).(uint32)
+	return mlutil.Convert(v, internal.Uint32Type).(uint32)
 }
 
 /*
@@ -282,42 +282,42 @@ func (c *Column) Uints64() []uint64 {
 }
 
 /*
-Float returns column' value converted to float32
+Real returns column' value converted to float32
+
+	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
+	t.Col("Rate").Real(0) -> 1.2
+*/
+func (c *Column) Real(row int) float32 {
+	return c.Index(row).Real()
+}
+
+/*
+Float returns column' value converted to float64
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Rate").Float(0) -> 1.2
 */
-func (c *Column) Float(row int) float32 {
+func (c *Column) Float(row int) float64 {
 	return c.Index(row).Float()
 }
 
 /*
-Float64 returns column' value converted to float64
+Reals extracts column' values as []float32
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Rate").Float64(0) -> 1.2
+	t.Col("Rate").Reals() -> {1.2,1.5}
 */
-func (c *Column) Float64(row int) float64 {
-	return c.Index(row).Float64()
+func (c *Column) Reals() []float32 {
+	return c.ExtractAs(internal.Float32Type).([]float32)
 }
 
 /*
-Floats extracts column' values as []float32
+Floats extracts column' values as []float64
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Rate").Floats() -> {1.2,1.5}
 */
-func (c *Column) Floats() []float32 {
-	return c.ExtractAs(internal.FloatType).([]float32)
-}
-
-/*
-Floats64 extracts column' values as []float64
-
-	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Rate").Floats64() -> {1.2,1.5}
-*/
-func (c *Column) Floats64() []float64 {
+func (c *Column) Floats() []float64 {
 	return c.ExtractAs(internal.Float64Type).([]float64)
 }
 
@@ -346,7 +346,7 @@ func (c *Column) ExtractAs(tp reflect.Type) interface{} {
 		reflect.Copy(r, c.column)
 		return r.Interface()
 	} else {
-		return util.Convert(c.column, tp)
+		return mlutil.Convert(c.column, tp)
 	}
 }
 
@@ -405,7 +405,7 @@ func (c *Column) Unique() *Column {
 			m.SetMapIndex(x, v)
 		}
 	}
-	return &Column{r, util.Bits{}}
+	return &Column{r, internal.Bits{}}
 }
 
 /*
@@ -414,7 +414,7 @@ Index returns cell with value at specified index
 	t := tables.New([]struct{Age int}{{"33"}})
 	c := t.Col("Age").Index(0)
 	c.String() -> "33"
-	c.Float() -> 33.0
+	c.Real() -> 33.0
 	c.Int() -> 33
 */
 func (c *Column) Index(i int) Cell {
@@ -426,7 +426,7 @@ Max returns cell with max column' maximal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Age").Max().Int() -> 44
-	t.Col("Rate").Max().Float() -> 1.5
+	t.Col("Rate").Max().Real() -> 1.5
 */
 func (c *Column) Max() Cell {
 	return Cell{fu.MaxValue(c.column)}
@@ -437,7 +437,7 @@ Min returns cell with column' minimal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Age").Min().Int() -> 32
-	t.Col("Rate").Min().Float() -> 1.2
+	t.Col("Rate").Min().Real() -> 1.2
 */
 func (c *Column) Min() Cell {
 	return Cell{fu.MinValue(c.column)}
@@ -466,6 +466,6 @@ func (c *Column) MinIndex() int {
 /*
 Raw returns column internals
 */
-func (c *Column) Raw() (reflect.Value, util.Bits) {
+func (c *Column) Raw() (reflect.Value, internal.Bits) {
 	return c.column, c.na
 }

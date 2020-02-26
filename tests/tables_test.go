@@ -3,8 +3,8 @@ package tests
 import (
 	"fmt"
 	"github.com/sudachen/go-fp/lazy"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
-	"github.com/sudachen/go-ml/util"
 	"gotest.tools/assert"
 	"gotest.tools/assert/cmp"
 	"math/rand"
@@ -31,7 +31,7 @@ func Test_New1(t *testing.T) {
 	}{{"Ivanov", 32, 1.2}})
 	assert.DeepEqual(t, q.Names(), []string{"Name", "Age", "Rate"})
 	assert.Assert(t, q.Len() == 1)
-	assert.DeepEqual(t, util.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
@@ -49,13 +49,13 @@ func Test_New2(t *testing.T) {
 		{"Petrov", 44, 1.5}})
 	assert.DeepEqual(t, q.Names(), []string{"Name", "Age", "Rate"})
 	assert.Assert(t, q.Len() == 2)
-	assert.DeepEqual(t, util.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
 			"Rate": float32(1.2),
 		})
-	assert.DeepEqual(t, util.MapInterface(q.Row(1)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(1)),
 		map[string]interface{}{
 			"Name": "Petrov",
 			"Age":  44,
@@ -70,13 +70,13 @@ func Test_New3(t *testing.T) {
 		"Rate": []float32{1.2, 1.5}})
 	assert.DeepEqual(t, q.Names(), []string{"Age", "Name", "Rate"})
 	assert.Assert(t, q.Len() == 2)
-	assert.DeepEqual(t, util.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
 			"Rate": float32(1.2),
 		})
-	assert.DeepEqual(t, util.MapInterface(q.Row(1)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(1)),
 		map[string]interface{}{
 			"Name": "Petrov",
 			"Age":  44,
@@ -99,13 +99,13 @@ func Test_New4(t *testing.T) {
 	q := tables.New(c)
 	assert.DeepEqual(t, q.Names(), []string{"Name", "Age", "Rate"})
 	assert.Assert(t, q.Len() == 2)
-	assert.DeepEqual(t, util.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
 			"Rate": float32(1.2),
 		})
-	assert.DeepEqual(t, util.MapInterface(q.Row(1)),
+	assert.DeepEqual(t, mlutil.MapInterface(q.Row(1)),
 		map[string]interface{}{
 			"Name": "Petrov",
 			"Age":  44,
@@ -256,13 +256,13 @@ func Test_ColumnInt2(t *testing.T) {
 func Test_ColumnFloat(t *testing.T) {
 	q := PrepareTable(t)
 
-	assert.DeepEqual(t, q.Col("Rate").Float(0), float32(1.2))
-	assert.DeepEqual(t, q.Col("Rate").Float(1), float32(1.5))
-	assert.DeepEqual(t, q.Col("Rate").Float64(0), float64(float32(1.2)))
-	assert.DeepEqual(t, q.Col("Rate").Float64(1), float64(float32(1.5)))
+	assert.DeepEqual(t, q.Col("Rate").Real(0), float32(1.2))
+	assert.DeepEqual(t, q.Col("Rate").Real(1), float32(1.5))
+	assert.DeepEqual(t, q.Col("Rate").Float(0), float64(float32(1.2)))
+	assert.DeepEqual(t, q.Col("Rate").Float(1), float64(float32(1.5)))
 
-	assert.DeepEqual(t, q.Col("Age").Float(0), float32(32))
-	assert.DeepEqual(t, q.Col("Age").Float64(0), float64(32))
+	assert.DeepEqual(t, q.Col("Age").Real(0), float32(32))
+	assert.DeepEqual(t, q.Col("Age").Float(0), float64(32))
 
 	assert.Assert(t, cmp.Panics(func() { q.Col("rate") }))
 }
@@ -270,10 +270,10 @@ func Test_ColumnFloat(t *testing.T) {
 func Test_ColumnFloats(t *testing.T) {
 	q := PrepareTable(t)
 
-	assert.DeepEqual(t, q.Col("Age").Floats(), []float32{32, 44})
-	assert.DeepEqual(t, q.Col("Rate").Floats(), []float32{1.2, 1.5})
-	assert.DeepEqual(t, q.Col("Age").Floats64(), []float64{32, 44})
-	assert.DeepEqual(t, q.Col("Rate").Floats64(), []float64{float64(float32(1.2)), float64(float32(1.5))})
+	assert.DeepEqual(t, q.Col("Age").Reals(), []float32{32, 44})
+	assert.DeepEqual(t, q.Col("Rate").Reals(), []float32{1.2, 1.5})
+	assert.DeepEqual(t, q.Col("Age").Floats(), []float64{32, 44})
+	assert.DeepEqual(t, q.Col("Rate").Floats(), []float64{float64(float32(1.2)), float64(float32(1.5))})
 }
 
 func Test_ColumnLen(t *testing.T) {
@@ -302,7 +302,7 @@ func Test_ColumnUnique(t *testing.T) {
 	assert.Assert(t, q2.Len() == 4)
 	assert.DeepEqual(t, q2.Col("Name").Unique().Strings(), []string{"Ivanov", "Petrov", "Sidorov"})
 	assert.DeepEqual(t, q2.Col("Age").Unique().Ints(), []int{32, 44, 55})
-	assert.DeepEqual(t, q2.Col("Rate").Unique().Floats(), []float32{1.2, 1.5, 0})
+	assert.DeepEqual(t, q2.Col("Rate").Unique().Reals(), []float32{1.2, 1.5, 0})
 
 	q3 := q.Append([]struct {
 		Name string
@@ -421,7 +421,7 @@ func Test_Lazy2(t *testing.T) {
 	r := lazy.New(trList).Filter(func(r TR) bool { return r.Age > 30 }).Collect().([]TR)
 	q2 := tables.ConqFillUp(q.Lazy(func(r TR) bool { return r.Age > 30 }), 6)
 	for i, v := range r {
-		assert.DeepEqual(t, util.MapInterface(q2.Row(i)),
+		assert.DeepEqual(t, mlutil.MapInterface(q2.Row(i)),
 			map[string]interface{}{
 				"Name": v.Name,
 				"Age":  v.Age,

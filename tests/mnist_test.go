@@ -1,11 +1,11 @@
 package tests
 
 import (
+	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/mlutil/mnist"
 	"github.com/sudachen/go-ml/nn"
 	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/nn/ng"
-	"github.com/sudachen/go-ml/util"
-	"github.com/sudachen/go-ml/util/mnist"
 	"gotest.tools/assert"
 	"testing"
 	"time"
@@ -13,7 +13,7 @@ import (
 
 var mnistMLP0 = nn.Connect(
 	&nn.FullyConnected{Size: 128, Activation: nn.ReLU},
-	&nn.FullyConnected{Size: 64, Activation: nn.Swish, BatchNorm: true },
+	&nn.FullyConnected{Size: 64, Activation: nn.Swish, BatchNorm: true},
 	&nn.FullyConnected{Size: 10, Activation: nn.Softmax, BatchNorm: true})
 
 func Test_mnistMLP0(t *testing.T) {
@@ -41,11 +41,11 @@ func Test_mnistMLP0(t *testing.T) {
 	assert.NilError(t, err)
 	ok, err := ng.Measure(net1, &mnist.Dataset{}, &ng.Classification{Accuracy: 0.96}, ng.Printing)
 	assert.Assert(t, ok)
-	err = net1.SaveParamsFile(util.CacheFile("tests/mnistMLP0.params"))
+	err = net1.SaveParamsFile(mlutil.CacheFile("tests/mnistMLP0.params"))
 	assert.NilError(t, err)
 
 	net2 := nn.Bind(mx.CPU, mnistMLP0, mx.Dim(10, 1, 28, 28), nil)
-	err = net2.LoadParamsFile(util.CacheFile("tests/mnistMLP0.params"), false)
+	err = net2.LoadParamsFile(mlutil.CacheFile("tests/mnistMLP0.params"), false)
 	assert.NilError(t, err)
 	ok, err = ng.Measure(net2, &mnist.Dataset{}, &ng.Classification{Accuracy: 0.96}, ng.Printing)
 	assert.Assert(t, ok)
@@ -76,12 +76,12 @@ func Test_mnistConv0(t *testing.T) {
 	acc, params, err := gym.Train(mx.CPU, mnistConv0)
 	assert.NilError(t, err)
 	assert.Assert(t, acc >= 0.98)
-	err = params.Save(util.CacheFile("tests/mnistConv0.params"))
+	err = params.Save(mlutil.CacheFile("tests/mnistConv0.params"))
 	assert.NilError(t, err)
 
 	net := nn.Bind(mx.CPU, mnistConv0, mx.Dim(10, 1, 28, 28), nil)
 	assert.NilError(t, err)
-	err = net.LoadParamsFile(util.CacheFile("tests/mnistConv0.params"), false)
+	err = net.LoadParamsFile(mlutil.CacheFile("tests/mnistConv0.params"), false)
 	assert.NilError(t, err)
 	net.PrintSummary(false)
 

@@ -1,7 +1,7 @@
 //
-// Package util implements utility code using in go-ml components
+// Package mlutil implements utility code using in go-ml components
 //
-package util
+package mlutil
 
 import (
 	"reflect"

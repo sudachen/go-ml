@@ -160,7 +160,7 @@ func (s *SqlFloat) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlFloat) Reflect() reflect.Type {
-	return internal.FloatType
+	return internal.Float32Type
 }
 
 type SqlDouble struct {

@@ -1,4 +1,4 @@
-package util
+package internal
 
 import (
 	"math/bits"
@@ -45,6 +45,13 @@ func (q Bits) Bit(i int) bool {
 }
 
 func (q Bits) Slice(from, to int) Bits {
+	ql := q.Len()
+	if ql <= from {
+		return Bits{}
+	}
+	if to > ql {
+		to = ql
+	}
 	c := ((to - from + _W - 1) / _W)
 	x := make([]uint, c)
 	rr := from % _W

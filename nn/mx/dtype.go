@@ -17,7 +17,7 @@ func (tp Dtype) String() string {
 	case Float32:
 		return "Float32"
 	case Float64:
-		return "Float64"
+		return "Float"
 	case Float16:
 		return "Float16"
 	case Uint8:

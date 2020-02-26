@@ -1,4 +1,4 @@
-package util
+package mlutil
 
 import (
 	"math/rand"
@@ -15,4 +15,3 @@ func Index(i int, p interface{}) unsafe.Pointer {
 func RandomIndex(ln, seed int) []int {
 	return rand.New(rand.NewSource(int64(seed))).Perm(ln)
 }
-

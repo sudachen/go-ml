@@ -1,15 +1,15 @@
 package tests
 
 import (
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/nn/mx"
-	"github.com/sudachen/go-ml/util"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
 )
 
 var test_on_GPU = mx.GpuCount() > 0 && false
-var RequiredMxVersion = util.MakeVersion(1, 5, 0)
+var RequiredMxVersion = mlutil.MakeVersion(1, 5, 0)
 
 func Test_0info(t *testing.T) {
 	t.Logf("go-dlnn version %v", mx.Version)
@@ -49,8 +49,8 @@ func f_Array1(ctx mx.Context, t *testing.T) {
 	defer c.Release()
 	assert.Assert(t, c.Dtype().String() == "Uint8")
 	assert.Assert(t, c.Dim().String() == "(100,10,1)")
-	assert.Assert(t, PanicWith("failed to create array", func(){
-		 _ = mx.Array(mx.Int64, mx.Dim(100000000000, 100000000, 1000000000))
+	assert.Assert(t, PanicWith("failed to create array", func() {
+		_ = mx.Array(mx.Int64, mx.Dim(100000000000, 100000000, 1000000000))
 	}))
 	assert.Assert(t, PanicWith("bad dimension", func() {
 		_ = mx.Array(mx.Int64, mx.Dim())
@@ -157,7 +157,7 @@ func Test_Array3(t *testing.T) {
 	ds := []int{1, 2, 3, 4, 5}
 	a := mx.CPU.Array(mx.Float16, mx.Dim(5), 1, 2, 3, 4, 5)
 	defer a.Release()
-	assert.Assert(t, PanicWith("Float16", func(){
+	assert.Assert(t, PanicWith("Float16", func() {
 		_ = a.Values(mx.Float16)
 	}))
 	v := a.Values(mx.Float32)
@@ -214,10 +214,10 @@ func Test_Zeros(t *testing.T) {
 func Test_SetValues(t *testing.T) {
 	a := mx.CPU.Array(mx.Float32, mx.Dim(2, 3))
 	defer a.Release()
-	assert.Assert(t, PanicWith("not enough", func(){
+	assert.Assert(t, PanicWith("not enough", func() {
 		a.SetValues([]float32{1, 2, 3})
 	}))
-	assert.Assert(t, PanicWith("too many", func(){
+	assert.Assert(t, PanicWith("too many", func() {
 		a.SetValues([]float32{1, 2, 3, 4, 5, 6, 7})
 	}))
 	assert.Assert(t, PanicWith("not enough", func() {
@@ -231,4 +231,3 @@ func Test_SetValues(t *testing.T) {
 	a.SetValues([]float32{9, 8, 7, 6, 5, 4})
 	assert.Assert(t, compare(t, a.ValuesF32(), []float32{9, 8, 7, 6, 5, 4}, mx.Float32, 0))
 }
-
