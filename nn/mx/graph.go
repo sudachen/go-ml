@@ -2,7 +2,7 @@ package mx
 
 import (
 	"fmt"
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/nn/mx/capi"
 	"runtime"
 	"strings"

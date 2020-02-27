@@ -1,7 +1,7 @@
 package mlutil
 
 import (
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"golang.org/x/xerrors"
 	"io"
 )

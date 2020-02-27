@@ -2,7 +2,7 @@ package tables
 
 import (
 	"fmt"
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"strings"
 )
 

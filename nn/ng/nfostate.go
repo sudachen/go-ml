@@ -1,7 +1,7 @@
 package ng
 
 import (
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/logger"
 	"github.com/sudachen/go-ml/nn"
 	"path/filepath"

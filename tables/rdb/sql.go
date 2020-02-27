@@ -3,7 +3,7 @@ package rdb
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"

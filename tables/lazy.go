@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"github.com/sudachen/go-fp/lazy"
+	"github.com/sudachen/go-foo/lazy"
 	"reflect"
 	"sync"
 )

@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/nn/ng"
 	"io"

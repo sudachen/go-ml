@@ -2,7 +2,7 @@ package csv
 
 import (
 	"encoding/csv"
-	"github.com/sudachen/go-fp/fu"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
