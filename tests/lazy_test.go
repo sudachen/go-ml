@@ -92,6 +92,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 	assert.Assert(t, bf.String() == CSV)
 }
 
+/*
 func Test_LazyBatch(t *testing.T) {
 	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
 		fu.Cached("go-ml/datasets/iris/iris.csv"))
@@ -133,3 +134,4 @@ func Test_LazyBatch(t *testing.T) {
 
 	assert.Assert(t, l == q.Len())
 }
+*/
