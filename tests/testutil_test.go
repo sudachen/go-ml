@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/tables"
 	"gotest.tools/assert"
 	"gotest.tools/assert/cmp"
@@ -22,13 +22,13 @@ func PrepareTable(t *testing.T) *tables.Table {
 		{"Petrov", 44, 1.5}})
 	assert.DeepEqual(t, q.Names(), []string{"Name", "Age", "Rate"})
 	assert.Assert(t, q.Len() == 2)
-	assert.DeepEqual(t, mlutil.MapInterface(q.Row(0)),
+	assert.DeepEqual(t, fu.MapInterface(q.Row(0)),
 		map[string]interface{}{
 			"Name": "Ivanov",
 			"Age":  32,
 			"Rate": float32(1.2),
 		})
-	assert.DeepEqual(t, mlutil.MapInterface(q.Row(1)),
+	assert.DeepEqual(t, fu.MapInterface(q.Row(1)),
 		map[string]interface{}{
 			"Name": "Petrov",
 			"Age":  44,
@@ -54,7 +54,7 @@ func TrTable() *tables.Table {
 func assertTrData(t *testing.T, q *tables.Table) {
 	assert.Assert(t, q.Len() == len(trList))
 	for i, r := range trList {
-		assert.DeepEqual(t, mlutil.MapInterface(q.Row(i)),
+		assert.DeepEqual(t, fu.MapInterface(q.Row(i)),
 			map[string]interface{}{
 				"Name": r.Name,
 				"Age":  r.Age,

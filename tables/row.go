@@ -1,19 +1,19 @@
 package tables
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-foo/fu"
 	"reflect"
 )
 
 /*
-Row returns table row as a map of reflect.Value
+Row returns table row as a map of reflect.Integer
 	t := tables.New([]struct{Name string; Age int; Rate float32}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Row(0)["Name"].String() -> "Ivanov"
 */
 func (t *Table) Row(row int) map[string]reflect.Value {
 	r := map[string]reflect.Value{}
 	for i, n := range t.raw.Names {
-		// prevent to change value in slice via returned reflect.Value
+		// prevent to change value in slice via returned reflect.Integer
 		r[n] = reflect.ValueOf(t.raw.Columns[i].Index(row).Interface())
 	}
 	return r
@@ -27,7 +27,7 @@ func (t *Table) FillRow(i int, tp reflect.Type, p reflect.Value) {
 	fl := tp.NumField()
 	for fi := 0; fi < fl; fi++ {
 		n := tp.Field(fi).Name
-		j := mlutil.IndexOf(n, t.raw.Names)
+		j := fu.IndexOf(n, t.raw.Names)
 		if j < 0 {
 			panic("table does not have field " + n)
 		}
@@ -36,7 +36,7 @@ func (t *Table) FillRow(i int, tp reflect.Type, p reflect.Value) {
 }
 
 /*
-GetRow gets row as a struct wrapped by reflect.Value
+GetRow gets row as a struct wrapped by reflect.Integer
 */
 func (t *Table) GetRow(i int, tp reflect.Type) reflect.Value {
 	v := reflect.New(tp)

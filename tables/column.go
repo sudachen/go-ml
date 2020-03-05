@@ -9,7 +9,7 @@ import (
 
 type Column struct {
 	column reflect.Value
-	na     internal.Bits
+	na     mlutil.Bits
 }
 
 /*
@@ -20,7 +20,7 @@ func Col(a interface{}) *Column {
 	if v.Kind() != reflect.Slice {
 		panic("anly slice is allowed as an argument")
 	}
-	return &Column{v, internal.Bits{}}
+	return &Column{v, mlutil.Bits{}}
 }
 
 /*
@@ -133,8 +133,7 @@ Uint returns column' value converted to uint
 	t.Col("Age").Uint(0) -> 32
 */
 func (c *Column) Uint(row int) uint {
-	v := c.column.Index(row)
-	return mlutil.Convert(v, internal.UintType).(uint)
+	return c.Index(row).Uint()
 }
 
 /*
@@ -144,8 +143,7 @@ Uint8 returns column' value converted to uint8
 	t.Col("Age").Uint8(0) -> 32
 */
 func (c *Column) Uint8(row int) uint8 {
-	v := c.column.Index(row)
-	return mlutil.Convert(v, internal.Uint8Type).(uint8)
+	return c.Index(row).Uint8()
 }
 
 /*
@@ -155,8 +153,7 @@ Uint16 returns column' value converted to uint16
 	t.Col("Age").Uint16(0) -> 32
 */
 func (c *Column) Uint16(row int) uint16 {
-	v := c.column.Index(row)
-	return mlutil.Convert(v, internal.Uint16Type).(uint16)
+	return c.Index(row).Uint16()
 }
 
 /*
@@ -166,8 +163,7 @@ Uint32 returns column' value converted to uint32
 	t.Col("Age").Uint32(0) -> 32
 */
 func (c *Column) Uint32(row int) uint32 {
-	v := c.column.Index(row)
-	return mlutil.Convert(v, internal.Uint32Type).(uint32)
+	return c.Index(row).Uint32()
 }
 
 /*
@@ -339,14 +335,17 @@ ExtractAs extracts values as array with specified type
 	t.Col("Age").ExtractAs(reflect.TypeOf("")).([]string)[0] -> "32"
 	t.Col("Rate").ExtractAs(reflect.TypeOf(int(0))).([]int)[0] -> 1
 */
-func (c *Column) ExtractAs(tp reflect.Type) interface{} {
+func (c *Column) ExtractAs(tp reflect.Type, nocopy ...bool) interface{} {
 	if c.column.Type().Elem() == tp {
 		l := c.column.Len()
+		if fu.Fnzb(nocopy...) {
+			return c.column.Interface()
+		}
 		r := reflect.MakeSlice(c.column.Type(), l, l)
 		reflect.Copy(r, c.column)
 		return r.Interface()
 	} else {
-		return mlutil.Convert(c.column, tp)
+		return mlutil.ConvertSlice(c.column, c.na, tp, nocopy...).Interface()
 	}
 }
 
@@ -405,7 +404,7 @@ func (c *Column) Unique() *Column {
 			m.SetMapIndex(x, v)
 		}
 	}
-	return &Column{r, internal.Bits{}}
+	return &Column{r, mlutil.Bits{}}
 }
 
 /*
@@ -466,6 +465,11 @@ func (c *Column) MinIndex() int {
 /*
 Raw returns column internals
 */
-func (c *Column) Raw() (reflect.Value, internal.Bits) {
+func (c *Column) Raw() (reflect.Value, mlutil.Bits) {
 	return c.column, c.na
+}
+
+func (c *Column) IsFloat() bool {
+	t := c.Type()
+	return t.Kind() == reflect.Float32 || t.Kind() == reflect.Float64
 }

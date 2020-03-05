@@ -1,4 +1,4 @@
-package internal
+package mlutil
 
 import (
 	"math/bits"
@@ -186,4 +186,11 @@ func (q Bits) Word(i int) uint {
 		return q.b[i]
 	}
 	return 0
+}
+
+func (q Bits) Count() (n int) {
+	for _, x := range q.b {
+		n += bits.OnesCount(x)
+	}
+	return
 }

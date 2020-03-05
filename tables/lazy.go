@@ -1,114 +1,297 @@
 package tables
 
 import (
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
+	"github.com/sudachen/go-ml/base"
+	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
-	"sync"
 )
 
-/*
-Lazy creates new lazy transformation stream from the table and empty struct or some transformation function
-*/
-func (t *Table) Lazy(x interface{}) *lazy.Stream {
-	v := reflect.ValueOf(x)
-	vt := v.Type()
-	flag := &lazy.AtomicFlag{Value: 1}
-	stopf := func() { flag.Clear() }
-	if v.Kind() == reflect.Struct || (v.Kind() == reflect.Ptr && v.Elem().Kind() == reflect.Struct) {
-		if vt.Kind() == reflect.Ptr {
-			vt = vt.Elem()
+type Lazy lazy.Source
+type Sink lazy.Sink
+
+func SourceError(err error) Lazy {
+	return func() lazy.Stream {
+		return func(_ uint64) (reflect.Value, error) {
+			return reflect.Value{}, err
 		}
-		getf := func(index int64) reflect.Value {
-			if index < int64(t.Len()) && flag.State() {
-				return t.GetRow(int(index), vt)
-			}
-			return reflect.ValueOf(false)
-		}
-		return &lazy.Stream{Getf: getf, Tp: vt, Stopf: stopf}
-	} else if v.Kind() == reflect.Func &&
-		vt.NumIn() == 1 && vt.NumOut() == 1 &&
-		vt.In(0).Kind() == reflect.Struct &&
-		(vt.Out(0).Kind() == reflect.Struct || vt.Out(0).Kind() == reflect.Bool) {
-		ti := vt.In(0)
-		to := vt.Out(0)
-		isFilter := to.Kind() == reflect.Bool
-		getf := func(index int64) reflect.Value {
-			if index < int64(t.Len()) && flag.State() {
-				q := []reflect.Value{t.GetRow(int(index), ti)}
-				r := v.Call(q)
-				if isFilter {
-					if r[0].Bool() {
-						return q[0]
-					}
-					return reflect.ValueOf(true)
-				}
-				return r[0]
-			}
-			return reflect.ValueOf(false)
-		}
-		if isFilter {
-			return &lazy.Stream{Getf: getf, Tp: ti, Stopf: stopf}
-		}
-		return &lazy.Stream{Getf: getf, Tp: to, Stopf: stopf}
-	} else {
-		panic("only struct{...}, func(struct{...})struct{...} or func(struct{...})bool are allowed as an argument")
 	}
 }
 
-/*
-FillUp fills new table from the transformation source
-*/
-func FillUp(z *lazy.Stream) *Table {
-	c := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, z.Tp), 0)
-	go func() {
-		index := int64(0)
-		for {
-			v := z.Next(index)
-			index++
-			if v.Kind() == reflect.Bool {
-				if !v.Bool() {
-					break
-				}
-			} else {
-				// not need to use select{send&stop}
-				c.Send(v)
-			}
-		}
-		c.Close()
-	}()
-	return New(c.Interface())
+func SinkError(err error) Sink {
+	return func(_ reflect.Value) error {
+		return err
+	}
 }
 
-/*
-ConqFillUp fills new table from the transformation source concurrently
-*/
-func ConqFillUp(z *lazy.Stream, concurrency int) *Table {
-	index := &lazy.AtomicCounter{0}
-	wc := &lazy.WaitCounter{Value: 0}
-	c := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, z.Tp), concurrency)
-	gw := sync.WaitGroup{}
-	gw.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
-		go func() {
-			defer gw.Done()
-			for {
-				n := index.Inc()
-				v := z.Next(n)
-				wc.Wait(n)
-				if v.Kind() != reflect.Bool {
-					// not need to use select{send&stop}
-					c.Send(v)
+func (t *Table) Lazy() Lazy {
+	return func() lazy.Stream {
+		flag := &lazy.AtomicFlag{Value: 1}
+		return func(index uint64) (v reflect.Value, err error) {
+			if index == lazy.STOP {
+				flag.Clear()
+			} else if flag.State() && index < uint64(t.raw.Length) {
+				lr := base.Struct{
+					Names:   t.raw.Names,
+					Columns: make([]reflect.Value, len(t.raw.Names)),
+				}
+				for i := range t.raw.Columns {
+					lr.Columns[i] = t.raw.Columns[i].Index(int(index))
+				}
+				return reflect.ValueOf(lr), nil
+			}
+			return reflect.ValueOf(false), nil
+		}
+	}
+}
+
+func (zf Lazy) Map(f interface{}) Lazy {
+	if p, ok := f.(base.Predictor); ok {
+		return zf.Predict(p, false)
+	}
+	return func() lazy.Stream {
+		z := zf()
+		vf := reflect.ValueOf(f)
+		vt := vf.Type()
+		or, ir := vt, vt
+		if vf.Kind() == reflect.Func {
+			ir = vt.In(0)
+			or = vt.Out(0)
+		} else if vf.Kind() != reflect.Struct {
+			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Map")
+		}
+		unwrap := base.Unwrapper(ir)
+		wrap := base.Wrapper(or)
+		return func(index uint64) (v reflect.Value, err error) {
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return v, err
+			}
+			x := unwrap(v.Interface().(base.Struct))
+			if vf.Kind() == reflect.Func {
+				x = vf.Call([]reflect.Value{x})[0]
+			}
+			return reflect.ValueOf(wrap(x)), nil
+		}
+	}
+}
+
+func (zf Lazy) Transform(f interface{}) Lazy {
+	if p, ok := f.(base.Predictor); ok {
+		return zf.Predict(p, true)
+	}
+	return func() lazy.Stream {
+		z := zf()
+		vf := reflect.ValueOf(f)
+		vt := vf.Type()
+		or, ir := vt, vt
+		if vf.Kind() == reflect.Func {
+			ir = vt.In(0)
+			or = vt.Out(0)
+		} else if vf.Kind() != reflect.Struct {
+			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Transform")
+		}
+		unwrap := base.Unwrapper(ir)
+		transform := base.Transformer(or)
+		return func(index uint64) (v reflect.Value, err error) {
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return v, err
+			}
+			x := unwrap(v.Interface().(base.Struct))
+			if vf.Kind() == reflect.Func {
+				x = vf.Call([]reflect.Value{x})[0]
+			}
+			return transform(x, v), nil
+		}
+	}
+}
+
+func (zf Lazy) Filter(f interface{}) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		vf := reflect.ValueOf(f)
+		vt := vf.Type()
+		unwrap := base.Unwrapper(vt.In(0))
+		return func(index uint64) (v reflect.Value, err error) {
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return v, err
+			}
+			x := unwrap(v.Interface().(base.Struct))
+			if vf.Call([]reflect.Value{x})[0].Bool() {
+				return
+			}
+			return reflect.ValueOf(true), nil
+		}
+	}
+}
+
+func (z Lazy) First(n int) Lazy {
+	return Lazy(lazy.Source(z).First(n))
+}
+
+func (z Lazy) Parallel(concurrency ...int) Lazy {
+	return Lazy(lazy.Source(z).Parallel(concurrency...))
+}
+
+const iniCollectLength = 13
+
+func (z Lazy) Collect() (t *Table, err error) {
+	length := 0
+	columns := []reflect.Value{}
+	names := []string{}
+	na := []mlutil.Bits{}
+	err = z.Drain(func(v reflect.Value) error {
+		if v.Kind() != reflect.Bool {
+			lr := v.Interface().(base.Struct)
+			if length == 0 {
+				names = lr.Names
+				columns = make([]reflect.Value, len(names))
+				na = make([]mlutil.Bits, len(names))
+				for i, x := range lr.Columns {
+					columns[i] = reflect.MakeSlice(reflect.SliceOf(x.Type()), 0, iniCollectLength)
+				}
+			}
+			for i, x := range lr.Columns {
+				columns[i] = reflect.Append(columns[i], x)
+				na[i].Set(length, lr.Na.Bit(i))
+			}
+			length++
+		}
+		return nil
+	})
+	if err != nil {
+		return
+	}
+	return MakeTable(names, columns, na, length), nil
+}
+
+func (z Lazy) LuckyCollect() *Table {
+	t, err := z.Collect()
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+func (z Lazy) Drain(sink Sink) (err error) {
+	return lazy.Source(z).Drain(sink)
+}
+
+func (z Lazy) LuckySink(sink Sink) {
+	if err := z.Drain(sink); err != nil {
+		panic(err)
+	}
+}
+
+func (z Lazy) Count() (int, error) {
+	return lazy.Source(z).Count()
+}
+
+func (z Lazy) LuckyCount() int {
+	c, err := z.Count()
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (z Lazy) Rand(seed int, prob float64) Lazy {
+	return Lazy(lazy.Source(z).Rand(seed, prob))
+}
+
+func (z Lazy) RandSkip(seed int, prob float64) Lazy {
+	return Lazy(lazy.Source(z).RandSkip(seed, prob))
+}
+
+func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
+	z := zf()
+	return func() lazy.Stream {
+		nr := fu.NaiveRandom{Value: uint32(seed)}
+		wc := lazy.WaitCounter{Value: 0}
+		cj := -1
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if index == lazy.STOP {
+				wc.Stop()
+			}
+			if wc.Wait(index) {
+				if err == nil && v.Kind() != reflect.Bool {
+					lr := v.Interface().(base.Struct)
+					if cj < 0 {
+						cj = fu.IndexOf(column, lr.Names)
+					}
+					p := nr.Float()
+					val := reflect.ValueOf(fu.Ifei(p < prob, 1, 0))
+					lr = lr.Copy(cj + 1)
+					if cj < 0 {
+						lr.Names = append(lr.Names, column)
+						lr.Columns = append(lr.Columns, val)
+					} else {
+						lr.Columns[cj] = val
+						lr.Na.Set(cj, false)
+					}
+					v = reflect.ValueOf(lr)
 				}
 				wc.Inc()
-				if v.Kind() == reflect.Bool && !v.Bool() {
-					break
+			}
+			return
+		}
+	}
+}
+
+func (zf Lazy) Predict(pred base.Predictor, transform bool) Lazy {
+	z := zf()
+	return func() lazy.Stream {
+		pool := lazy.AtomicPool(func(no int) interface{} {
+			if ppred, ok := pred.(base.ParallelPredictor); ok {
+				p, _ := ppred.Acquire()
+				return p
+			}
+			if no == 0 {
+				return pred
+			}
+			return nil
+		})
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if index == lazy.STOP {
+				pool.Close()
+				return
+			}
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			q, no := pool.Allocate()
+			defer pool.Release(no)
+			lrx := v.Interface().(base.Struct)
+			lr := q.(base.Predictor).Predict(lrx)
+			if !transform {
+				return reflect.ValueOf(lr), nil
+			}
+			return reflect.ValueOf(lr.MergeInto(lrx)), nil
+		}
+	}
+}
+
+func (zf Lazy) Round(prec int) Lazy {
+	z := zf()
+	return func() lazy.Stream {
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lrx := v.Interface().(base.Struct)
+			lr := lrx.Copy(0)
+			for i, c := range lr.Columns {
+				switch c.Kind() {
+				case reflect.Float32:
+					lr.Columns[i] = reflect.ValueOf(fu.Round32(float32(c.Float()), prec))
+				case reflect.Float64:
+					lr.Columns[i] = reflect.ValueOf(fu.Round64(c.Float(), prec))
 				}
 			}
-		}()
+			return reflect.ValueOf(lr), nil
+		}
 	}
-	go func() {
-		gw.Wait()
-		c.Close()
-	}()
-	return New(c.Interface())
 }

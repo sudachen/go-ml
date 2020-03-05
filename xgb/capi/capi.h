@@ -15,6 +15,11 @@ int XGDMatrixCreateFromDT(void** data,
     bst_ulong ncol,
     DMatrixHandle* out,
     int nthread);
+int XGDMatrixCreateFromMat(const float *data,
+    bst_ulong nrow,
+    bst_ulong ncol,
+    float missing,
+    DMatrixHandle *out);
 int XGDMatrixFree(DMatrixHandle handle);
 int XGDMatrixSaveBinary(DMatrixHandle handle,const char *fname, int silent);
 int XGDMatrixNumRow(DMatrixHandle handle,bst_ulong *out);
@@ -50,7 +55,7 @@ int XGBoosterPredict(BoosterHandle handle,
     unsigned ntree_limit,
     int training,
     bst_ulong *out_len,
-    const float **out_result);
+    /* const float* */ void *out_result);
 int XGDMatrixSetFloatInfo(DMatrixHandle handle,
     const char *field,
     const float *array,
@@ -76,6 +81,7 @@ DEFINE_JUMPER(XGBoostVersion);
 DEFINE_JUMPER(XGBGetLastError);
 DEFINE_JUMPER(XGDMatrixCreateFromFile);
 DEFINE_JUMPER(XGDMatrixCreateFromDT);
+DEFINE_JUMPER(XGDMatrixCreateFromMat);
 DEFINE_JUMPER(XGDMatrixFree);
 DEFINE_JUMPER(XGDMatrixSaveBinary);
 DEFINE_JUMPER(XGDMatrixNumRow);

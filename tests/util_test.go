@@ -11,18 +11,18 @@ import (
 )
 
 func Test_BitsAppend(t *testing.T) {
-	b := internal.Bits{}
-	b = b.Append(internal.Bits{}, 0)
+	b := mlutil.Bits{}
+	b = b.Append(mlutil.Bits{}, 0)
 	assert.Assert(t, b.Len() == 0)
-	q := b.Append(internal.FillBits(1), 33)
+	q := b.Append(mlutil.FillBits(1), 33)
 	assert.Assert(t, q.Len() == 34)
 	assert.Assert(t, cmp.Panics(func() {
-		q.Append(internal.Bits{}, 33)
+		q.Append(mlutil.Bits{}, 33)
 	}))
 }
 
 func Test_Bits1(t *testing.T) {
-	b := internal.FillBits(31)
+	b := mlutil.FillBits(31)
 	assert.Assert(t, b.Bit(0))
 	b.Set(0, false)
 	assert.Assert(t, !b.Bit(0))
@@ -33,7 +33,7 @@ func Test_Bits1(t *testing.T) {
 		assert.Assert(t, b.Bit(i))
 	}
 	assert.Assert(t, !b.Bit(31))
-	z := internal.FillBits(1)
+	z := mlutil.FillBits(1)
 	c := z.Append(b, 31)
 	// c => 100....[31]0111...[i=62]000...
 	assert.Assert(t, c.Repr() == "1"+strings.Repeat("0", 30)+"0"+strings.Repeat("1", 30))
@@ -65,7 +65,7 @@ func Test_Bits1(t *testing.T) {
 }
 
 func Test_Bits2(t *testing.T) {
-	b := internal.Bits{}
+	b := mlutil.Bits{}
 	assert.Assert(t, b.Len() == 0)
 	b.Set(255, false)
 	assert.Assert(t, b.Len() == 0)
@@ -73,7 +73,7 @@ func Test_Bits2(t *testing.T) {
 	assert.Assert(t, b.Len() == 129)
 	b.Set(128, false)
 	assert.Assert(t, b.Len() == 0)
-	a := internal.Bits{}
+	a := mlutil.Bits{}
 	a.Set(0, true)
 	a.Set(256, true)
 	a.Set(256, false)
@@ -81,16 +81,16 @@ func Test_Bits2(t *testing.T) {
 }
 
 func Test_Bits3(t *testing.T) {
-	b := internal.FillBits(128)
+	b := mlutil.FillBits(128)
 	assert.Assert(t, b.Len() == 128)
-	b = b.Append(internal.FillBits(120), 128)
+	b = b.Append(mlutil.FillBits(120), 128)
 	assert.Assert(t, b.Len() == 128+120)
-	b = b.Append(internal.FillBits(67), 128+120)
+	b = b.Append(mlutil.FillBits(67), 128+120)
 	assert.Assert(t, b.Len() == 128+120+67)
 }
 
 func Test_Bits4(t *testing.T) {
-	b := internal.Bits{}.Append(internal.FillBits(3), 127)
+	b := mlutil.Bits{}.Append(mlutil.FillBits(3), 127)
 	s := strings.Repeat("0", 127) + "111"
 	r := []uint8{}
 	for i := range s {
@@ -103,7 +103,7 @@ func Test_Bits4(t *testing.T) {
 }
 
 func Test_Bits5(t *testing.T) {
-	b := internal.Bits{}.Append(internal.FillBits(3), 127)
+	b := mlutil.Bits{}.Append(mlutil.FillBits(3), 127)
 	b.Set(0, true)
 	q := b.Slice(1, 127)
 	assert.Assert(t, q.Len() == 0)
@@ -115,9 +115,9 @@ func Test_Bits5(t *testing.T) {
 
 func Test_Convert(t *testing.T) {
 	q := []int{1, 2, 3}
-	assert.DeepEqual(t, mlutil.Convert(reflect.ValueOf(q), internal.IntType), q)
+	assert.DeepEqual(t, mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, internal.IntType).Interface(), q)
 	assert.Assert(t, cmp.Panics(func() {
-		mlutil.Convert(reflect.ValueOf(q), internal.TsType)
+		mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, internal.TsType)
 	}))
-	assert.DeepEqual(t, mlutil.Convert(reflect.ValueOf(int(1)), internal.StringType), "1")
+	assert.DeepEqual(t, mlutil.Convert(reflect.ValueOf(int(1)), false, internal.StringType).Interface(), "1")
 }

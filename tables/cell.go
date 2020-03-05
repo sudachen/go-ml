@@ -19,49 +19,49 @@ func (c Cell) String() string {
 }
 
 func (c Cell) Int() int {
-	return mlutil.Convert(c.Value, internal.IntType).(int)
+	return mlutil.Convert(c.Value, false, internal.IntType).Interface().(int)
 }
 
 func (c Cell) Int8() int8 {
-	return mlutil.Convert(c.Value, internal.Int8Type).(int8)
+	return mlutil.Convert(c.Value, false, internal.Int8Type).Interface().(int8)
 }
 
 func (c Cell) Int16() int16 {
-	return mlutil.Convert(c.Value, internal.Int16Type).(int16)
+	return mlutil.Convert(c.Value, false, internal.Int16Type).Interface().(int16)
 }
 
 func (c Cell) Int32() int32 {
-	return mlutil.Convert(c.Value, internal.Int32Type).(int32)
+	return mlutil.Convert(c.Value, false, internal.Int32Type).Interface().(int32)
 }
 
 func (c Cell) Int64() int64 {
-	return mlutil.Convert(c.Value, internal.Int64Type).(int64)
+	return mlutil.Convert(c.Value, false, internal.Int64Type).Interface().(int64)
 }
 
 func (c Cell) Uint() uint {
-	return mlutil.Convert(c.Value, internal.UintType).(uint)
+	return mlutil.Convert(c.Value, false, internal.UintType).Interface().(uint)
 }
 
 func (c Cell) Uint8() uint8 {
-	return mlutil.Convert(c.Value, internal.Uint8Type).(uint8)
+	return mlutil.Convert(c.Value, false, internal.Uint8Type).Interface().(uint8)
 }
 
 func (c Cell) Uint16() uint16 {
-	return mlutil.Convert(c.Value, internal.Uint16Type).(uint16)
+	return mlutil.Convert(c.Value, false, internal.Uint16Type).Interface().(uint16)
 }
 
 func (c Cell) Uint32() uint32 {
-	return mlutil.Convert(c.Value, internal.Uint32Type).(uint32)
+	return mlutil.Convert(c.Value, false, internal.Uint32Type).Interface().(uint32)
 }
 
 func (c Cell) Uint64() uint64 {
-	return mlutil.Convert(c.Value, internal.Uint64Type).(uint64)
+	return mlutil.Convert(c.Value, false, internal.Uint64Type).Interface().(uint64)
 }
 
 func (c Cell) Real() float32 {
-	return mlutil.Convert(c.Value, internal.Float32Type).(float32)
+	return mlutil.Convert(c.Value, false, internal.Float32Type).Interface().(float32)
 }
 
 func (c Cell) Float() float64 {
-	return mlutil.Convert(c.Value, internal.Float64Type).(float64)
+	return mlutil.Convert(c.Value, false, internal.Float64Type).Interface().(float64)
 }

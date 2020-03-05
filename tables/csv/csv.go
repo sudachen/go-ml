@@ -3,7 +3,9 @@ package csv
 import (
 	"encoding/csv"
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-foo/lazy"
+	"github.com/sudachen/go-ml/base"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
 	"io"
@@ -11,23 +13,6 @@ import (
 	"reflect"
 )
 
-type Column string
-type RenamedColumn struct{ CsvCol, TableCol string }
-type String string
-type RenamedString RenamedColumn
-type Int string
-type RenamedInt RenamedColumn
-type Float32 string
-type RenamedFloat32 RenamedColumn
-type Float64 string
-type RenamedFloat64 RenamedColumn
-type Time string // RFC 3339
-type TimeLayout struct {
-	Col    string
-	Layout string
-}
-type RenamedTime RenamedColumn
-type RenamedTimeLayout struct{ CsvCol, TableCol, Layout string }
 type Comma rune
 
 const initialCapacity = 101
@@ -53,6 +38,8 @@ const initialCapacity = 101
 				fu.External("http://sudachen.xyz/testfile.zip",
 					fu.Cached("external-files/sudachen.xyz/testfile.zip")))
 
+	csv.Read(fu.External("http://sudachen.xyz/testfile.xz",fu.Streamed))
+
 	var csvContent =
     `s1,f_*,f_1,f_2
   	"the first",100,0,0.1
@@ -67,7 +54,9 @@ const initialCapacity = 101
 func Read(source interface{}, opts ...interface{}) (t *tables.Table, err error) {
 	var f io.ReadCloser
 	if e, ok := source.(fu.Input); ok {
-		if f, err = e.Open(); err != nil { return }
+		if f, err = e.Open(); err != nil {
+			return
+		}
 		defer f.Close()
 		return dqread(f, opts...)
 	}
@@ -100,10 +89,10 @@ func read(source io.Reader, opts ...interface{}) (t *tables.Table, err error) {
 		return
 	}
 	columns := make([]reflect.Value, len(names))
-	na := make([]internal.Bits, len(names))
+	na := make([]mlutil.Bits, len(names))
 	rdr.FieldsPerRecord = len(names)
 	for i := range columns {
-		columns[i] = reflect.MakeSlice(reflect.TypeOf(fm[i].Type), 0, initialCapacity)
+		columns[i] = reflect.MakeSlice(reflect.SliceOf(fm[i].Type()), 0, initialCapacity)
 	}
 
 	stopC := make(chan []string)
@@ -147,29 +136,170 @@ func read(source io.Reader, opts ...interface{}) (t *tables.Table, err error) {
 	if err != nil {
 		return
 	}
-	for i,m := range fm {
-		m.AutoConvert(&columns[i],&na[i])
+	for i, m := range fm {
+		m.AutoConvert(&columns[i], &na[i])
 	}
 	return tables.MakeTable(names, columns, na, length), nil
 }
 
+func Source(source interface{}, opts ...interface{}) tables.Lazy {
+	if e, ok := source.(fu.Input); ok {
+		return lazyread(e, opts...)
+	} else if e, ok := source.(string); ok {
+		return lazyread(fu.File(e), opts...)
+	} else if rd, ok := source.(io.Reader); ok {
+		return lazyread(fu.WrapClose(rd, nil), opts...)
+	}
+	return tables.SourceError(xerrors.Errorf("csv reader does not know source type %v", reflect.TypeOf(source).String()))
+}
+
+func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
+	return func() lazy.Stream {
+		rd, err := source.Open()
+		if err != nil {
+			return lazy.Error(err)
+		}
+		dq := fu.Decompress(rd)
+		cls := fu.CloserChain{dq, rd}
+		rdr := csv.NewReader(dq)
+		rdr.Comma = fu.RuneOption(Comma(rdr.Comma), opts)
+		vals, err := rdr.Read()
+		if err != nil {
+			cls.Close()
+			return lazy.Error(err)
+		}
+		fm, names, err := mapFields(vals, opts)
+		if err != nil {
+			cls.Close()
+			return lazy.Error(err)
+		}
+
+		rdr.FieldsPerRecord = len(names)
+		stopC := make(chan struct{})
+		csvC := make(chan []string)
+		errC := make(chan error)
+		go func() {
+		loop:
+			for {
+				vx, e := rdr.Read() // function err
+				if e != nil {
+					if e != io.EOF {
+						errC <- e
+					}
+					break loop
+				}
+				select {
+				case csvC <- vx:
+				case <-stopC:
+					break loop
+				}
+			}
+			cls.Close()
+			close(csvC)
+		}()
+
+		wc := lazy.WaitCounter{Value: 0}
+		return func(index uint64) (reflect.Value, error) {
+			if index == lazy.STOP {
+				wc.Stop()
+				close(stopC)
+				return reflect.ValueOf(false), nil
+			}
+			if wc.Wait(index) {
+				select {
+				case vals, ok := <-csvC:
+					wc.Inc()
+					if ok {
+						lr := base.Struct{names, make([]reflect.Value, len(names)), mlutil.Bits{}}
+						for i := range names {
+							x, na, e := fm[i].Convert(vals[i])
+							if e != nil {
+								return reflect.Value{}, e
+							}
+							if na {
+								lr.Na.Set(i, true)
+							}
+							lr.Columns[i] = x
+						}
+						return reflect.ValueOf(lr), nil
+					}
+				case err = <-errC:
+				}
+			}
+			return reflect.ValueOf(false), err
+		}
+	}
+}
+
 /*
 	csv.Write(t,"file.csv.xz",
-				csv.Column("feature_1").As("Feature1"))
+				csv.Column("feature_1").Round(2).As("Feature1"))
 
 	csv.Write(t,fu.Lzma2("file.csv.xz"),
-				csv.Column("feature_1").As("Feature1"))
+				csv.Column("feature*").As("Feature*"))
 
 	bf := bytes.Buffer{}
 	csv.Write(t,fu.Gzip(&bf),
 				csv.Comma('|'),
-				csv.Column("feature_1").As("Feature1"))
+				csv.Column("feature*").Round(3).As("Feature*"))
 
-	csv.Write(t,fu.S3upload("s3://profile@bucket/testfile.csv.xz",
-					fu.Lzma2("bucket/myfile.txt.xz")),
+	csv.Write(t,fu.Lzma2(s3.External("profile:bucket/testfile.csv.xz")),
 				csv.Comma('|'),
 				csv.Column("feature_1").As("Feature1"))
 */
 func Write(t *tables.Table, dest interface{}, opts ...interface{}) (err error) {
-	return
+	return t.Lazy().Drain(Sink(dest, opts...))
+}
+
+func Sink(dest interface{}, opts ...interface{}) tables.Sink {
+	var err error
+	f := io.Writer(nil)
+	cls := io.Closer(nil)
+	if e, ok := dest.(fu.Output); ok {
+		if f, err = e.Create(); err == nil {
+			cls = f.(io.Closer)
+		}
+	} else if e, ok := dest.(string); ok {
+		if f, err = os.Create(e); err == nil {
+			cls = f.(io.Closer)
+		}
+	} else if wr, ok := dest.(io.Writer); ok {
+		f = wr
+	} else {
+		return tables.SinkError(xerrors.Errorf("csv writer does not know dest type %v", reflect.TypeOf(dest).String()))
+	}
+	if err != nil {
+		return tables.SinkError(err)
+	}
+	cwr := csv.NewWriter(f)
+	hasHeader := false
+	fm := []mapper{}
+	names := []string{}
+	return func(v reflect.Value) (err error) {
+		if v.Kind() == reflect.Bool {
+			cwr.Flush()
+			if cls != nil {
+				err = cls.Close()
+			}
+			if !v.Bool() { // shit happens, remove dest
+			}
+			return
+		}
+		lr := v.Interface().(base.Struct)
+		if !hasHeader {
+			if fm, names, err = mapFields(lr.Names, opts); err != nil {
+				return
+			}
+			if err = cwr.Write(names); err != nil {
+				return
+			}
+			hasHeader = true
+		}
+		r := make([]string, len(lr.Names))
+		for i, x := range lr.Columns {
+			r[i] = fm[i].Format(x, lr.Na.Bit(i))
+		}
+		err = cwr.Write(r)
+		return
+	}
 }

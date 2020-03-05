@@ -2,7 +2,11 @@ package rdb
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-ml/mlutil"
+	"golang.org/x/xerrors"
 	"reflect"
 )
 
@@ -15,50 +19,158 @@ const (
 	InsertUpdateIfExists
 )
 
-type PrimaryKey string
+type Table string
+type Query string
 type Schema string
 type Driver string
 type Batch int
 
-type BOOLEAN string
-type SMALLINT string
-type INTEGER string
-type AUTOINCREMENT string
-type BIGINT string
-type FLOAT string
-type DOUBLE string
-type DATE string
-type DATETIME string
-type TIMESTAMP string
+type SqlTypeOpt func(string) (string, string, string, bool)
 
-type DECIMAL_ struct {
-	Name             string
-	Precision, Scale int
-}
-
-func DECIMAL(name string, prec ...int) DECIMAL_ {
-	r := DECIMAL_{Name: name, Precision: -1, Scale: -1}
-	if len(prec) > 0 {
-		r.Precision = prec[0]
-		r.Scale = 0
+func Describe(names []string, opts []interface{}) (func(string) (string, string, bool), error) {
+	drv := fu.StrOption(Driver(""), opts)
+	m := map[string]func() (string, string, bool){}
+	for _, o := range opts {
+		if sto, ok := o.(SqlTypeOpt); ok {
+			v, ctp, c, cpk := sto(drv)
+			starsub := mlutil.Starsub(v, c)
+			exists := false
+			for _, n := range names {
+				if _, ok := m[n]; !ok {
+					if ns, ok := starsub(n); ok {
+						colType := ctp
+						isPK := cpk
+						m[n] = func() (string, string, bool) {
+							return colType, ns, isPK
+						}
+						exists = true
+					}
+				}
+			}
+			if !exists {
+				return nil, xerrors.Errorf("field %v does not exist in table/query file", v)
+			}
+		}
 	}
-	if len(prec) > 1 {
-		r.Scale = prec[1]
+	return func(n string) (colType string, colName string, isPK bool) {
+		if f, ok := m[n]; ok {
+			return f()
+		} else {
+			colName = n
+		}
+		return
+	}, nil
+}
+
+func Column(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "", v, false
 	}
-	return r
+}
+func BOOLEAN(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "BOOLEAN", v, false
+	}
+}
+func SMALLINT(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "SMALLINT", v, false
+	}
+}
+func INTEGER(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "INTEGER", v, false
+	}
+}
+func BIGINT(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "BIGINT", v, false
+	}
+}
+func FLOAT(v string) SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		if drv == "postgres" {
+			return v, "REAL", v, false
+		}
+		return v, "FLOAT", v, false
+	}
+}
+func DOUBLE(v string) SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		if drv == "postgres" {
+			return v, "DOUBLE PRECISION", v, false
+		}
+		return v, "DOUBLE", v, false
+	}
+}
+func DATE(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "DATE", v, false
+	}
+}
+func DATETIME(v string) SqlTypeOpt {
+	return func(_ string) (string, string, string, bool) {
+		return v, "DATETIME", v, false
+	}
+}
+func TIMESTAMP(v string) SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		if drv == "sqlite3" {
+			return v, "DATETIME", v, false
+		}
+		return v, "TIMESTAMP", v, false
+	}
 }
 
-type VARCHAR_ struct {
-	Name   string
-	Length int
+func DECIMAL(v string, prec ...int) SqlTypeOpt {
+	s := "DECIMAL"
+	if len(prec) > 0 && prec[0] >= 0 {
+		scale := 0
+		if len(prec) > 1 {
+			scale = prec[1]
+		}
+		s += fmt.Sprintf("(%d,%d)", prec[0], scale)
+	}
+	return func(_ string) (string, string, string, bool) {
+		return v, s, v, false
+	}
 }
 
-func VARCHAR(name string, length ...int) VARCHAR_ {
-	r := VARCHAR_{Name: name, Length: 65536}
+func VARCHAR(v string, length ...int) SqlTypeOpt {
+	l := 65536
 	if len(length) > 0 {
-		r.Length = length[0]
+		l = length[0]
 	}
-	return r
+	s := fmt.Sprintf("VARCHAR(%d)", l)
+	return func(_ string) (string, string, string, bool) {
+		return v, s, v, false
+	}
+}
+
+func AUTOINCREMENT(v string) SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		switch drv {
+		case "postgres":
+			return v, "SERIAL NOT NULL", v, false
+		case "mysql":
+			return v, "INTEGER NOT NULL AUTO_INCREMENT", v, false
+		}
+		return v, "INTEGER NOT NULL AUTOINCREMENT", v, false
+	}
+}
+
+func (f SqlTypeOpt) PrimaryKey() SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		n, t, p, _ := f(drv)
+		return n, t, p, true
+	}
+}
+
+func (f SqlTypeOpt) As(b string) SqlTypeOpt {
+	return func(drv string) (string, string, string, bool) {
+		n, t, _, k := f(drv)
+		return n, t, b, k
+	}
 }
 
 type SqlScan interface {
