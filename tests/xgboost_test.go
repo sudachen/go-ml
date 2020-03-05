@@ -17,6 +17,7 @@ func Test_XgboostVersion(t *testing.T) {
 	fmt.Println(v)
 }
 
+
 func Test_Linear(t *testing.T) {
 	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
 		fu.Cached("go-ml/datasets/iris/iris8.csv"))
