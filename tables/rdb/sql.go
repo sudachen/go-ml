@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
 	"io"
@@ -121,7 +121,7 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 				end := !rows.Next()
 				if !end {
 					rows.Scan(x...)
-					lr := base.Struct{Names: names, Columns: make([]reflect.Value, len(ns))}
+					lr := mlutil.Struct{Names: names, Columns: make([]reflect.Value, len(ns))}
 					for i := range x {
 						y := x[i].(SqlScan)
 						v, ok := y.Value()
@@ -279,7 +279,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 			cls.Close()
 			return
 		}
-		lr := val.Interface().(base.Struct)
+		lr := val.Interface().(mlutil.Struct)
 		names = make([]string, len(lr.Names))
 		pk = make([]bool, len(lr.Names))
 		drv := fu.StrOption(Driver(""), opts)
@@ -332,7 +332,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 	}
 }
 
-func sqlCreateQuery(lr base.Struct, table string, describe func(int) (string, string, bool), opts []interface{}) string {
+func sqlCreateQuery(lr mlutil.Struct, table string, describe func(int) (string, string, bool), opts []interface{}) string {
 	pk := []string{}
 	query := "create table "
 

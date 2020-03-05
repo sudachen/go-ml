@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
@@ -210,7 +209,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				case vals, ok := <-csvC:
 					wc.Inc()
 					if ok {
-						lr := base.Struct{names, make([]reflect.Value, len(names)), mlutil.Bits{}}
+						lr := mlutil.Struct{names, make([]reflect.Value, len(names)), mlutil.Bits{}}
 						for i := range names {
 							x, na, e := fm[i].Convert(vals[i])
 							if e != nil {
@@ -285,7 +284,7 @@ func Sink(dest interface{}, opts ...interface{}) tables.Sink {
 			}
 			return
 		}
-		lr := v.Interface().(base.Struct)
+		lr := v.Interface().(mlutil.Struct)
 		if !hasHeader {
 			if fm, names, err = mapFields(lr.Names, opts); err != nil {
 				return

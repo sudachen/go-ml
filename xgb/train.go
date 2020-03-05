@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/xgb/capi"
@@ -12,7 +11,7 @@ import (
 	"reflect"
 )
 
-func (par Model) Fit(dataset base.Dataset, opts ...interface{}) (xgb XGBoost, err error) {
+func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, err error) {
 	var dat, labdat []float32
 	var dat2, labdat2 []float32
 
@@ -27,7 +26,7 @@ func (par Model) Fit(dataset base.Dataset, opts ...interface{}) (xgb XGBoost, er
 		if v.Kind() == reflect.Bool {
 			return nil
 		}
-		lr := v.Interface().(base.Struct)
+		lr := v.Interface().(mlutil.Struct)
 
 		if lj < 0 {
 			lj = fu.IndexOf(dataset.Label, lr.Names)

@@ -1,4 +1,4 @@
-package base
+package mlutil
 
 import (
 	"github.com/sudachen/go-foo/lazy"
@@ -20,12 +20,12 @@ type ModelFarm interface {
 
 type FatModel func(...interface{}) (Predictor, error)
 
-func (f FatModel) Fit(...interface{}) (Predictor, error) {
-	return f()
+func (f FatModel) Fit(opts ...interface{}) (Predictor, error) {
+	return f(opts...)
 }
 
-func (f FatModel) LuckyFit(...interface{}) Predictor {
-	e, err := f.Fit()
+func (f FatModel) LuckyFit(opts ...interface{}) Predictor {
+	e, err := f.Fit(opts...)
 	if err != nil {
 		panic(err)
 	}

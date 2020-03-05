@@ -3,7 +3,6 @@ package tables
 import (
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
 )
@@ -32,7 +31,7 @@ func (t *Table) Lazy() Lazy {
 			if index == lazy.STOP {
 				flag.Clear()
 			} else if flag.State() && index < uint64(t.raw.Length) {
-				lr := base.Struct{
+				lr := mlutil.Struct{
 					Names:   t.raw.Names,
 					Columns: make([]reflect.Value, len(t.raw.Names)),
 				}
@@ -47,7 +46,7 @@ func (t *Table) Lazy() Lazy {
 }
 
 func (zf Lazy) Map(f interface{}) Lazy {
-	if p, ok := f.(base.Predictor); ok {
+	if p, ok := f.(mlutil.Predictor); ok {
 		return zf.Predict(p, false)
 	}
 	return func() lazy.Stream {
@@ -61,13 +60,13 @@ func (zf Lazy) Map(f interface{}) Lazy {
 		} else if vf.Kind() != reflect.Struct {
 			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Map")
 		}
-		unwrap := base.Unwrapper(ir)
-		wrap := base.Wrapper(or)
+		unwrap := mlutil.Unwrapper(ir)
+		wrap := mlutil.Wrapper(or)
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(base.Struct))
+			x := unwrap(v.Interface().(mlutil.Struct))
 			if vf.Kind() == reflect.Func {
 				x = vf.Call([]reflect.Value{x})[0]
 			}
@@ -77,7 +76,7 @@ func (zf Lazy) Map(f interface{}) Lazy {
 }
 
 func (zf Lazy) Transform(f interface{}) Lazy {
-	if p, ok := f.(base.Predictor); ok {
+	if p, ok := f.(mlutil.Predictor); ok {
 		return zf.Predict(p, true)
 	}
 	return func() lazy.Stream {
@@ -91,13 +90,13 @@ func (zf Lazy) Transform(f interface{}) Lazy {
 		} else if vf.Kind() != reflect.Struct {
 			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Transform")
 		}
-		unwrap := base.Unwrapper(ir)
-		transform := base.Transformer(or)
+		unwrap := mlutil.Unwrapper(ir)
+		transform := mlutil.Transformer(or)
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(base.Struct))
+			x := unwrap(v.Interface().(mlutil.Struct))
 			if vf.Kind() == reflect.Func {
 				x = vf.Call([]reflect.Value{x})[0]
 			}
@@ -111,12 +110,12 @@ func (zf Lazy) Filter(f interface{}) Lazy {
 		z := zf()
 		vf := reflect.ValueOf(f)
 		vt := vf.Type()
-		unwrap := base.Unwrapper(vt.In(0))
+		unwrap := mlutil.Unwrapper(vt.In(0))
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(base.Struct))
+			x := unwrap(v.Interface().(mlutil.Struct))
 			if vf.Call([]reflect.Value{x})[0].Bool() {
 				return
 			}
@@ -142,7 +141,7 @@ func (z Lazy) Collect() (t *Table, err error) {
 	na := []mlutil.Bits{}
 	err = z.Drain(func(v reflect.Value) error {
 		if v.Kind() != reflect.Bool {
-			lr := v.Interface().(base.Struct)
+			lr := v.Interface().(mlutil.Struct)
 			if length == 0 {
 				names = lr.Names
 				columns = make([]reflect.Value, len(names))
@@ -216,7 +215,7 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 			}
 			if wc.Wait(index) {
 				if err == nil && v.Kind() != reflect.Bool {
-					lr := v.Interface().(base.Struct)
+					lr := v.Interface().(mlutil.Struct)
 					if cj < 0 {
 						cj = fu.IndexOf(column, lr.Names)
 					}
@@ -239,11 +238,11 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 	}
 }
 
-func (zf Lazy) Predict(pred base.Predictor, transform bool) Lazy {
+func (zf Lazy) Predict(pred mlutil.Predictor, transform bool) Lazy {
 	z := zf()
 	return func() lazy.Stream {
 		pool := lazy.AtomicPool(func(no int) interface{} {
-			if ppred, ok := pred.(base.ParallelPredictor); ok {
+			if ppred, ok := pred.(mlutil.ParallelPredictor); ok {
 				p, _ := ppred.Acquire()
 				return p
 			}
@@ -263,12 +262,12 @@ func (zf Lazy) Predict(pred base.Predictor, transform bool) Lazy {
 			}
 			q, no := pool.Allocate()
 			defer pool.Release(no)
-			lrx := v.Interface().(base.Struct)
-			lr := q.(base.Predictor).Predict(lrx)
+			lrx := v.Interface().(mlutil.Struct)
+			lr := q.(mlutil.Predictor).Predict(lrx)
 			if !transform {
 				return reflect.ValueOf(lr), nil
 			}
-			return reflect.ValueOf(lr.MergeInto(lrx)), nil
+			return reflect.ValueOf(lrx.With(lr)), nil
 		}
 	}
 }
@@ -281,7 +280,7 @@ func (zf Lazy) Round(prec int) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lrx := v.Interface().(base.Struct)
+			lrx := v.Interface().(mlutil.Struct)
 			lr := lrx.Copy(0)
 			for i, c := range lr.Columns {
 				switch c.Kind() {

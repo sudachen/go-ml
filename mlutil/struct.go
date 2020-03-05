@@ -1,9 +1,8 @@
-package base
+package mlutil
 
 import (
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"reflect"
 	"sync"
@@ -12,7 +11,7 @@ import (
 type Struct struct {
 	Names   []string
 	Columns []reflect.Value
-	Na      mlutil.Bits
+	Na      Bits
 }
 
 func (lr Struct) Copy(extra int) Struct {
@@ -25,7 +24,7 @@ func (lr Struct) Copy(extra int) Struct {
 	return Struct{names, columns, na}
 }
 
-func (lr Struct) MergeInto(lrx Struct) (r Struct) {
+func (lrx Struct) With(lr Struct) (r Struct) {
 	extra := 0
 	ndx := make([]int, len(lr.Names))
 	for i, n := range lr.Names {
@@ -56,10 +55,10 @@ func Wrapper(rt reflect.Type) func(reflect.Value) Struct {
 		names[i] = rt.Field(i).Name
 	}
 	return func(v reflect.Value) Struct {
-		lr := Struct{Columns: make([]reflect.Value, L), Names: names, Na: mlutil.Bits{}}
+		lr := Struct{Columns: make([]reflect.Value, L), Names: names, Na: Bits{}}
 		for i := range names {
 			x := v.Field(i)
-			lr.Na.Set(i, mlutil.Isna(x))
+			lr.Na.Set(i, Isna(x))
 			lr.Columns[i] = x
 		}
 		return lr
@@ -83,7 +82,7 @@ func Unwrapper(v reflect.Type) func(lr Struct) reflect.Value {
 					if pat == "" {
 						pat = vt.Name
 					}
-					like := mlutil.Pattern(pat)
+					like := Pattern(pat)
 					q := []int{}
 					for i, n := range lr.Names {
 						if like(n) {
@@ -113,12 +112,12 @@ func Unwrapper(v reflect.Type) func(lr Struct) reflect.Value {
 				et := vt.Type.Elem()
 				a := reflect.MakeSlice(reflect.SliceOf(et), len(nd), len(nd))
 				for j, k := range nd {
-					a.Index(j).Set(mlutil.Convert(lr.Columns[k], lr.Na.Bit(k), et))
+					a.Index(j).Set(Convert(lr.Columns[k], lr.Na.Bit(k), et))
 				}
 				x.Field(i).Set(a)
 			} else {
 				k := nd[0]
-				y := mlutil.Convert(lr.Columns[k], lr.Na.Bit(k), vt.Type)
+				y := Convert(lr.Columns[k], lr.Na.Bit(k), vt.Type)
 				x.Field(i).Set(y)
 			}
 		}
@@ -163,7 +162,7 @@ func Transformer(rt reflect.Type) func(reflect.Value, reflect.Value) reflect.Val
 		for i := range names {
 			if j := update[i]; j >= 0 {
 				x := v.Field(j)
-				lr.Na.Set(i, mlutil.Isna(x))
+				lr.Na.Set(i, Isna(x))
 				lr.Columns[i] = x
 			} else {
 				lr.Columns[i] = lrx.Columns[i]

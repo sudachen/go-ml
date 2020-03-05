@@ -1,7 +1,6 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/xgb/capi"
 	"unsafe"
@@ -27,8 +26,8 @@ func (x XGBoost) Close() (err error) {
 
 type Model []xgbparam
 
-func (m Model) Feed(ds base.Dataset) base.FatModel {
-	return func(opts ...interface{}) (base.Predictor, error) {
+func (m Model) Feed(ds mlutil.Dataset) mlutil.FatModel {
+	return func(opts ...interface{}) (mlutil.Predictor, error) {
 		return m.Fit(ds, opts...)
 	}
 }

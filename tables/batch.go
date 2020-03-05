@@ -2,7 +2,6 @@ package tables
 
 import (
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
 )
@@ -20,7 +19,7 @@ func (zf Lazy) Batch(length int) Batch {
 			for {
 				v, ok := <-vC
 				if ok {
-					lr := v.Interface().(base.Struct)
+					lr := v.Interface().(mlutil.Struct)
 					t := MakeTable(
 						lr.Names,
 						make([]reflect.Value, len(lr.Names)),
@@ -37,7 +36,7 @@ func (zf Lazy) Batch(length int) Batch {
 						if v, ok = <-vC; !ok {
 							break l
 						}
-						lr := v.Interface().(base.Struct)
+						lr := v.Interface().(mlutil.Struct)
 						for j := range lr.Names {
 							t.raw.Columns[j] = reflect.Append(t.raw.Columns[j], lr.Columns[j])
 							t.raw.Na[j].Set(n, lr.Na.Bit(j))

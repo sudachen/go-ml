@@ -1,7 +1,6 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/logger"
 	"github.com/sudachen/go-ml/mlutil"
@@ -39,7 +38,7 @@ func (m matrix) create(labels bool, rows int) (mx Matrix) {
 	return matrix32(m[0], nil, rows)
 }
 
-func (m matrix) set(row int, lr base.Struct, label int, features map[string]int) matrix {
+func (m matrix) set(row int, lr mlutil.Struct, label int, features map[string]int) matrix {
 	width := len(features)
 	fc := 0
 	for i, n := range lr.Names {
