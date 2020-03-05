@@ -3,11 +3,9 @@ package tests
 import (
 	"bytes"
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/tables/csv"
 	"github.com/sudachen/go-ml/tables/rdb"
 	"gotest.tools/assert"
-	"reflect"
 	"testing"
 )
 
