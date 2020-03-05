@@ -16,8 +16,7 @@ func Test_XgboostVersion(t *testing.T) {
 }
 
 func Test_Linear(t *testing.T) {
-	//dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
-	dataset := fu.External("https://ifcs.boku.ac.at/repository/data/iris/iris.csv",
+	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
 		fu.Cached("go-ml/datasets/iris/iris.csv"))
 
 	cls := tables.Enumset{}
