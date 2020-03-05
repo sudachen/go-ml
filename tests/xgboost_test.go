@@ -27,7 +27,7 @@ func Test_Linear(t *testing.T) {
 		csv.Float32("petalwidth").As("Feature4"),
 		csv.Meta(cls.Integer(), "class").As("Label"))
 
-	//fmt.Println(z.RandomFlag("Test",42,0.3).LuckyCollect())
+	fmt.Println(z.RandomFlag("Test",42,0.3).First(15).LuckyCollect())
 
 	estimator := xgb.GBTree(
 		xgb.Softmax,
@@ -43,8 +43,8 @@ func Test_Linear(t *testing.T) {
 		}).
 		LuckyFit()
 
-	//w1 := z.Rand(42,0.3).Map(estimator).Round(2).LuckyCollect()
-	//fmt.Println(w1.Head(15))
+	fmt.Println("predict")
+	//w1 := z.Rand(42,0.3).Map(estimator).Round(2).LuckyCollect() /fmt.Println(w1.Head(15))
 	w2 := z.Rand(42, 0.2).Transform(estimator).Round(2).LuckyCollect()
 	fmt.Println(w2.Head(150))
 }
