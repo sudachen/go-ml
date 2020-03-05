@@ -30,7 +30,6 @@ func Test_Linear(t *testing.T) {
 	fmt.Println(s)
 	rd.Close()
 
-
 	cls := tables.Enumset{}
 	z := csv.Source(dataset,
 		csv.Float32("sepallength").As("Feature1"),
