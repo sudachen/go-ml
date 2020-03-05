@@ -1,12 +1,14 @@
 package tests
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/base"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/tables/csv"
 	"github.com/sudachen/go-ml/xgb"
+	"gotest.tools/assert"
 	"testing"
 )
 
@@ -17,7 +19,17 @@ func Test_XgboostVersion(t *testing.T) {
 
 func Test_Linear(t *testing.T) {
 	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
-		fu.Cached("go-ml/datasets/iris/iris.csv"))
+		fu.Cached("go-ml/datasets/iris/iris8.csv"))
+
+	fmt.Println(fu.Cached("go-ml/datasets/iris/iris8.csv"))
+
+	rd,err := dataset.Open()
+	assert.NilError(t, err)
+	s,err := bufio.NewReader(rd).ReadString(byte('\n'))
+	assert.NilError(t, err)
+	fmt.Println(s)
+	rd.Close()
+
 
 	cls := tables.Enumset{}
 	z := csv.Source(dataset,
