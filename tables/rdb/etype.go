@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"reflect"
@@ -192,7 +191,7 @@ func (s *SqlSmall) Value() (r reflect.Value, ok bool) {
 }
 
 func (s *SqlSmall) Reflect() reflect.Type {
-	return internal.Int16Type
+	return mlutil.Int16
 }
 
 type SqlInteger struct {
@@ -208,7 +207,7 @@ func (s *SqlInteger) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlInteger) Reflect() reflect.Type {
-	return internal.IntType
+	return mlutil.Int
 }
 
 type SqlBigint struct {
@@ -224,7 +223,7 @@ func (s *SqlBigint) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlBigint) Reflect() reflect.Type {
-	return internal.Int64Type
+	return mlutil.Int64
 }
 
 type SqlBool struct {
@@ -240,7 +239,7 @@ func (s *SqlBool) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlBool) Reflect() reflect.Type {
-	return internal.BoolType
+	return mlutil.Bool
 }
 
 type SqlString struct {
@@ -256,7 +255,7 @@ func (s *SqlString) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlString) Reflect() reflect.Type {
-	return internal.StringType
+	return mlutil.String
 }
 
 type SqlFloat struct {
@@ -272,7 +271,7 @@ func (s *SqlFloat) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlFloat) Reflect() reflect.Type {
-	return internal.Float32Type
+	return mlutil.Float32
 }
 
 type SqlDouble struct {
@@ -288,7 +287,7 @@ func (s *SqlDouble) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlDouble) Reflect() reflect.Type {
-	return internal.Float64Type
+	return mlutil.Float64
 }
 
 type SqlTimestamp struct {
@@ -300,7 +299,7 @@ func (s *SqlTimestamp) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlTimestamp) Reflect() reflect.Type {
-	return internal.TsType
+	return mlutil.Ts
 }
 
 func (s *SqlTimestamp) Scan(value interface{}) error {

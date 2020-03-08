@@ -14,6 +14,15 @@ func (x XGBoost) setparam(par capiparam) {
 	capi.SetParam(x.handle, n, v)
 }
 
+type booster string
+
+const TreeBoost = booster("gbtree")
+const LinearBoost = booster("gblinear")
+const DartBoost = booster("dart")
+
+func (b booster) pair() (string, string) { return "booster", string(b) }
+func (b booster) name() string           { return "booster" }
+
 type objective string
 
 const Linear = objective("reg:linear")
@@ -47,7 +56,7 @@ type Param struct{ Name, Value string }
 func (sp Param) pair() (string, string) { return sp.Name, sp.Value }
 func (sp Param) name() string           { return sp.Name }
 
-func LearnRate(v float64) xgbparam { return Param{"learning_rate", fmt.Sprint(v)} }
+func LearningRate(v float64) xgbparam { return Param{"learning_rate", fmt.Sprint(v)} }
 
 type OptParam struct {
 	Name  string
@@ -56,16 +65,7 @@ type OptParam struct {
 
 func (sp OptParam) name() string     { return sp.Name }
 func (sp OptParam) opt() interface{} { return sp.Value }
-
-type Rounds int
-
-func (Rounds) name() string { return "Rounds" }
-
-type ResultName string
-
-func (ResultName) name() string { return "ResultName" }
-
 func MaxDepth(value int) xgbparam    { return Param{"max_depth", fmt.Sprint(value)} }
-func Nestimators(value int) xgbparam { return Param{"n_estimators", fmt.Sprint(value)} }
+func Estimators(value int) xgbparam  { return Param{"n_estimators", fmt.Sprint(value)} }
 
 //func Classnum(v int) xgbparam { return Param{"num_class",fmt.Sprint(v)} }

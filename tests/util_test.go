@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"gotest.tools/assert"
 	"gotest.tools/assert/cmp"
@@ -115,9 +114,9 @@ func Test_Bits5(t *testing.T) {
 
 func Test_Convert(t *testing.T) {
 	q := []int{1, 2, 3}
-	assert.DeepEqual(t, mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, internal.IntType).Interface(), q)
+	assert.DeepEqual(t, mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, mlutil.Int).Interface(), q)
 	assert.Assert(t, cmp.Panics(func() {
-		mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, internal.TsType)
+		mlutil.ConvertSlice(reflect.ValueOf(q), mlutil.Bits{}, mlutil.Ts)
 	}))
-	assert.DeepEqual(t, mlutil.Convert(reflect.ValueOf(int(1)), false, internal.StringType).Interface(), "1")
+	assert.DeepEqual(t, mlutil.Convert(reflect.ValueOf(int(1)), false, mlutil.String).Interface(), "1")
 }

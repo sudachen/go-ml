@@ -2,7 +2,6 @@ package tables
 
 import (
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
 )
@@ -68,7 +67,7 @@ Strings extracts column' values as []string
 	t.Col("Name").Strings() -> {"Ivanov","Petrow"}
 */
 func (c *Column) Strings() []string {
-	return c.ExtractAs(internal.StringType).([]string)
+	return c.ExtractAs(mlutil.String).([]string)
 }
 
 /*
@@ -184,7 +183,7 @@ Ints extracts column' values as []int
 	t.Col("Age").Ints() -> {32,44}
 */
 func (c *Column) Ints() []int {
-	return c.ExtractAs(internal.IntType).([]int)
+	return c.ExtractAs(mlutil.Int).([]int)
 }
 
 /*
@@ -194,7 +193,7 @@ Ints8 extracts column' values as []int8
 	t.Col("Age").Ints8() -> {32,44}
 */
 func (c *Column) Ints8() []int8 {
-	return c.ExtractAs(internal.Int8Type).([]int8)
+	return c.ExtractAs(mlutil.Int8).([]int8)
 }
 
 /*
@@ -204,7 +203,7 @@ Ints16 extracts column' values as []int16
 	t.Col("Age").Ints16() -> {32,44}
 */
 func (c *Column) Ints16() []int16 {
-	return c.ExtractAs(internal.Int16Type).([]int16)
+	return c.ExtractAs(mlutil.Int16).([]int16)
 }
 
 /*
@@ -214,7 +213,7 @@ Ints32 extracts column' values as []int32
 	t.Col("Age").Ints32() -> {32,44}
 */
 func (c *Column) Ints32() []int32 {
-	return c.ExtractAs(internal.Int32Type).([]int32)
+	return c.ExtractAs(mlutil.Int32).([]int32)
 }
 
 /*
@@ -224,7 +223,7 @@ Ints64 extracts column' values as []int64
 	t.Col("Age").Ints64() -> {32,44}
 */
 func (c *Column) Ints64() []int64 {
-	return c.ExtractAs(internal.Int64Type).([]int64)
+	return c.ExtractAs(mlutil.Int64).([]int64)
 }
 
 /*
@@ -234,7 +233,7 @@ Uints extracts column' values as []uint
 	t.Col("Age").Uints() -> {32,44}
 */
 func (c *Column) Uints() []uint {
-	return c.ExtractAs(internal.UintType).([]uint)
+	return c.ExtractAs(mlutil.Uint).([]uint)
 }
 
 /*
@@ -244,7 +243,7 @@ Uints8 extracts column' values as []uint8
 	t.Col("Age").Uints8() -> {32,44}
 */
 func (c *Column) Uints8() []uint8 {
-	return c.ExtractAs(internal.Uint8Type).([]uint8)
+	return c.ExtractAs(mlutil.Uint8).([]uint8)
 }
 
 /*
@@ -254,7 +253,7 @@ Uints16 extracts column' values as []uint16
 	t.Col("Age").Uints16() -> {32,44}
 */
 func (c *Column) Uints16() []uint16 {
-	return c.ExtractAs(internal.Uint16Type).([]uint16)
+	return c.ExtractAs(mlutil.Uint16).([]uint16)
 }
 
 /*
@@ -264,7 +263,7 @@ Uints32 extracts column' values as []uint32
 	t.Col("Age").Uints32() -> {32,44}
 */
 func (c *Column) Uints32() []uint32 {
-	return c.ExtractAs(internal.Uint32Type).([]uint32)
+	return c.ExtractAs(mlutil.Uint32).([]uint32)
 }
 
 /*
@@ -274,14 +273,14 @@ Uints64 extracts column' values as []uint64
 	t.Col("Age").Uints64() -> {32,44}
 */
 func (c *Column) Uints64() []uint64 {
-	return c.ExtractAs(internal.Uint64Type).([]uint64)
+	return c.ExtractAs(mlutil.Uint64).([]uint64)
 }
 
 /*
-Real returns column' value converted to float32
+Float32 returns column' value converted to float32
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Rate").Real(0) -> 1.2
+	t.Col("Rate").Float32(0) -> 1.2
 */
 func (c *Column) Real(row int) float32 {
 	return c.Index(row).Real()
@@ -304,7 +303,7 @@ Reals extracts column' values as []float32
 	t.Col("Rate").Reals() -> {1.2,1.5}
 */
 func (c *Column) Reals() []float32 {
-	return c.ExtractAs(internal.Float32Type).([]float32)
+	return c.ExtractAs(mlutil.Float32).([]float32)
 }
 
 /*
@@ -314,7 +313,7 @@ Floats extracts column' values as []float64
 	t.Col("Rate").Floats() -> {1.2,1.5}
 */
 func (c *Column) Floats() []float64 {
-	return c.ExtractAs(internal.Float64Type).([]float64)
+	return c.ExtractAs(mlutil.Float64).([]float64)
 }
 
 /*
@@ -413,7 +412,7 @@ Index returns cell with value at specified index
 	t := tables.New([]struct{Age int}{{"33"}})
 	c := t.Col("Age").Index(0)
 	c.String() -> "33"
-	c.Real() -> 33.0
+	c.Float32() -> 33.0
 	c.Int() -> 33
 */
 func (c *Column) Index(i int) Cell {
@@ -425,7 +424,7 @@ Max returns cell with max column' maximal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Age").Max().Int() -> 44
-	t.Col("Rate").Max().Real() -> 1.5
+	t.Col("Rate").Max().Float32() -> 1.5
 */
 func (c *Column) Max() Cell {
 	return Cell{fu.MaxValue(c.column)}
@@ -436,7 +435,7 @@ Min returns cell with column' minimal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
 	t.Col("Age").Min().Int() -> 32
-	t.Col("Rate").Min().Real() -> 1.2
+	t.Col("Rate").Min().Float32() -> 1.2
 */
 func (c *Column) Min() Cell {
 	return Cell{fu.MinValue(c.column)}

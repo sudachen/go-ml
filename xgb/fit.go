@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/xgb/capi"
 	"golang.org/x/xerrors"
 	"reflect"
 )
 
-func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, err error) {
+func fit(e Estimator, dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, err error) {
 	var dat, labdat []float32
 	var dat2, labdat2 []float32
 
@@ -68,7 +67,7 @@ func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, 
 
 		for i, c := range lr.Columns {
 			if c.Kind() != reflect.Float32 {
-				c = mlutil.Convert(c, lr.Na.Bit(i), internal.Float32Type)
+				c = mlutil.Convert(c, lr.Na.Bit(i), mlutil.Float32)
 			}
 			if i == lj {
 				if crss {
@@ -100,7 +99,7 @@ func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, 
 	m := matrix32(dat, labdat, length)
 	defer m.Free()
 
-	predictName := fu.Option(ResultName("Prediction"), par).String()
+	predictName := fu.Fnzs(e.Result, "Prediction")
 	predicts := []string{predictName}
 
 	if kj >= 0 {
@@ -111,21 +110,34 @@ func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, 
 		xgb = XGBoost{capi.Create2(m.handle), features, predicts}
 	}
 
-	for _, o := range par {
-		if param, ok := o.(capiparam); ok {
-			p, a := param.pair()
-			capi.SetParam(xgb.handle, p, a)
-		}
+	if e.Algorithm != booster("") {
+		xgb.setparam(e.Algorithm)
+	}
+
+	if e.Function != objective("") {
+		xgb.setparam(e.Function)
+	}
+
+	if e.Estimators != 0 {
+		capi.SetParam(xgb.handle, "n_estimators", fmt.Sprint(e.Estimators))
+	}
+
+	if e.LearningRate != 0 {
+		capi.SetParam(xgb.handle, "eta", fmt.Sprint(e.LearningRate))
+	}
+
+	if e.MaxDepth != 0 {
+		capi.SetParam(xgb.handle, "max_depth", fmt.Sprint(e.MaxDepth))
 	}
 
 	capi.SetParam(xgb.handle, "num_feature", fmt.Sprint(len(features)))
-	if obj := fu.Option(objective(""), par).Interface(); obj == Softprob || obj == Softmax {
+	if e.Function == Softprob || e.Function == Softmax {
 		x := int(fu.Maxr(fu.Maxr(0, labdat...), labdat2...))
 		if x < 0 {
 			panic(xerrors.Errorf("labels don't contain enough classes or label values is incorrect"))
 		}
 		capi.SetParam(xgb.handle, "num_class", fmt.Sprint(x+1))
-		if obj == Softprob {
+		if e.Function == Softprob {
 			xgb.predicts = []string{}
 			for i := 1; i <= x+1; i++ {
 				xgb.predicts = append(xgb.predicts, fmt.Sprintf("%v%v", predictName, i))
@@ -133,7 +145,7 @@ func (par Model) Fit(dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, 
 		}
 	}
 
-	rounds := int(fu.Option(Rounds(1), par).Int())
+	rounds := e.Iterations
 	for i := 0; i < rounds; i++ {
 		capi.Update(xgb.handle, i, m.handle)
 	}

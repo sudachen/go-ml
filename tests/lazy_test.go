@@ -15,6 +15,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 8,5,6,7,8
 12,9,10,11,12
 `
+
 	z := csv.Source(fu.StringIO(CSV)).
 		Map(func(x struct {
 			Id string    `id`
@@ -77,7 +78,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 			y.F2 = x.F4 - 2
 			return
 		}).
-		Parallel().
+		//Parallel().
 		Map(struct {
 			Id             string
 			F1, F2, F3, F4 float64
@@ -88,16 +89,17 @@ func Test_LazyCsvRdb1(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Assert(t, bf.String() == CSV)
+
 }
 
 /*
 func Test_LazyBatch(t *testing.T) {
-	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
+	datasets := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
 		fu.Cached("go-ml/datasets/iris/iris.csv"))
 
 	cls := tables.Enumset{}
 
-	z := csv.Source(dataset,
+	z := csv.Source(datasets,
 		csv.Float32("sepallength").As("Feature1"),
 		csv.Float32("sepalwidth").As("Feature2"),
 		csv.Float32("petallength").As("Feature3"),

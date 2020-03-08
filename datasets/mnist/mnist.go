@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 )
 
-const baseURL = "https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/mnist/"
+const baseURL = "https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/datasets/mnist/"
 const cacheDir = "datasets/mnist"
 
 type dsFile struct {

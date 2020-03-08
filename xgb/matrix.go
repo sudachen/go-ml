@@ -1,7 +1,6 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/logger"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/xgb/capi"
@@ -55,7 +54,7 @@ func (m matrix) set(row int, lr mlutil.Struct, label int, features map[string]in
 			case reflect.Int:
 				x = float32(v.Interface().(int))
 			default:
-				x = mlutil.Convert(v, false, internal.Float32Type).Interface().(float32)
+				x = mlutil.Convert(v, false, mlutil.Float32).Interface().(float32)
 			}
 		}
 		if i == label {
@@ -66,7 +65,7 @@ func (m matrix) set(row int, lr mlutil.Struct, label int, features map[string]in
 		}
 	}
 	if fc < width {
-		logger.Warningf("not enough features in dataset, required %d but exists only %d", width, fc)
+		logger.Warningf("not enough features in datasets, required %d but exists only %d", width, fc)
 	}
 	return m
 }

@@ -1,7 +1,6 @@
 package csv
 
 import (
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"reflect"
@@ -21,7 +20,7 @@ func (m mapper) Type() reflect.Type {
 	if m.valueType != reflect.Type(nil) {
 		return m.valueType
 	}
-	return internal.StringType
+	return mlutil.String
 }
 
 func (m mapper) Convert(s string) (value reflect.Value, na bool, err error) {

@@ -175,25 +175,94 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 
 		rdr.FieldsPerRecord = len(names)
 		stopC := make(chan struct{})
-		csvC := make(chan []string)
-		errC := make(chan error)
+		csvC := make(chan reflect.Value)
+
 		go func() {
+			type line struct {
+				vals []string
+				err  error
+			}
+			width := len(names)
+			output := &mlutil.Struct{}
+			input := []string{}
+			concurrency := 2
+			iC := make(chan int, concurrency)
+			oC := make(chan struct {
+				mlutil.Bits
+				error
+			}, concurrency)
+			nC := make(chan line)
+			for i := 0; i < concurrency; i++ {
+				go func() {
+					for {
+						if i, ok := <-iC; ok {
+							err := error(nil)
+							na := mlutil.Bits{}
+							for j := i; j < width; j += concurrency {
+								v, b, e := fm[j].Convert(input[j])
+								if e != nil {
+									err = e
+									break
+								}
+								output.Columns[j] = v
+								na.Set(j, b)
+							}
+							oC <- struct {
+								mlutil.Bits
+								error
+							}{na, err}
+						}
+					}
+				}()
+			}
+			stopf := make(chan struct{})
+			go func() {
+				for {
+					v, e := rdr.Read()
+					select {
+					case nC <- line{v, e}:
+					case <-stopf:
+						return
+					}
+				}
+			}()
 		loop:
 			for {
-				vx, e := rdr.Read() // function err
-				if e != nil {
-					if e != io.EOF {
-						errC <- e
+				l := <-nC
+				x := reflect.Value{}
+				if l.err != nil {
+					if l.err == io.EOF {
+						break loop
 					}
-					break loop
+					x = reflect.ValueOf(l.err)
+				} else {
+					output = &mlutil.Struct{names, make([]reflect.Value, width), mlutil.Bits{}}
+					input = l.vals
+					for i := 0; i < concurrency; i++ {
+						iC <- i
+					}
+					count := 0
+					err = nil
+					x = reflect.ValueOf(*output)
+					for count < concurrency {
+						fe := <-oC
+						err = fu.Fnze(err, fe.error)
+						output.Na.Or_(fe.Bits)
+						count++
+					}
+					if err != nil {
+						x = reflect.ValueOf(err)
+					}
 				}
 				select {
-				case csvC <- vx:
+				case csvC <- x:
 				case <-stopC:
 					break loop
 				}
 			}
 			cls.Close()
+			close(stopf)
+			close(iC)
 			close(csvC)
 		}()
 
@@ -204,28 +273,19 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				close(stopC)
 				return reflect.ValueOf(false), nil
 			}
-			if wc.Wait(index) {
-				select {
-				case vals, ok := <-csvC:
-					wc.Inc()
-					if ok {
-						lr := mlutil.Struct{names, make([]reflect.Value, len(names)), mlutil.Bits{}}
-						for i := range names {
-							x, na, e := fm[i].Convert(vals[i])
-							if e != nil {
-								return reflect.Value{}, e
-							}
-							if na {
-								lr.Na.Set(i, true)
-							}
-							lr.Columns[i] = x
-						}
-						return reflect.ValueOf(lr), nil
-					}
-				case err = <-errC:
-				}
+			if !wc.Wait(index) {
+				return reflect.ValueOf(false), nil
 			}
-			return reflect.ValueOf(false), err
+			val, ok := <-csvC
+			if ok {
+				err, _ = val.Interface().(error)
+			}
+			if !ok || err != nil {
+				wc.Stop()
+				return reflect.ValueOf(false), err
+			}
+			wc.Inc()
+			return val, nil
 		}
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/internal"
 	"github.com/sudachen/go-ml/mlutil"
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
@@ -395,7 +394,7 @@ func sqlTypeOf(tp reflect.Type, driver string) string {
 	case reflect.Bool:
 		return "BOOLEAN"
 	default:
-		if tp == internal.TsType {
+		if tp == mlutil.Ts {
 			return "DATETIME"
 		}
 	}

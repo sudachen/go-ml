@@ -3,17 +3,11 @@ package tables
 import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/internal"
+	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"reflect"
 	"sync"
 )
-
-type Meta interface {
-	Type() reflect.Type
-	Convert(string) (reflect.Value, bool, error)
-	Format(reflect.Value, bool) string
-}
 
 var enumType = reflect.TypeOf(Enum{})
 
@@ -114,7 +108,7 @@ type IntegerEnumerator struct {
 }
 
 func (ce IntegerEnumerator) Type() reflect.Type {
-	return internal.IntType
+	return mlutil.Int
 }
 
 func (ce IntegerEnumerator) Convert(v string) (reflect.Value, bool, error) {
@@ -146,7 +140,7 @@ func (ce IntegerEnumerator) Format(x reflect.Value, na bool) string {
 type Float32Enumerator struct{ IntegerEnumerator }
 
 func (ce Float32Enumerator) Type() reflect.Type {
-	return internal.Float32Type
+	return mlutil.Float32
 }
 
 func (ce Float32Enumerator) Convert(v string) (val reflect.Value, na bool, err error) {
@@ -159,7 +153,7 @@ func (ce Float32Enumerator) Convert(v string) (val reflect.Value, na bool, err e
 type TextEnumerator struct{ Enumerator }
 
 func (ce TextEnumerator) Type() reflect.Type {
-	return internal.StringType
+	return mlutil.String
 }
 
 func (ce TextEnumerator) Convert(v string) (reflect.Value, bool, error) {

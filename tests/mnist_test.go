@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil/mnist"
+	"github.com/sudachen/go-ml/datasets/mnist"
 	"github.com/sudachen/go-ml/nn"
 	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/nn/ng"
@@ -30,6 +30,59 @@ func Test_mnistMLP0(t *testing.T) {
 		Seed:      42,
 	}
 
+	/*
+	   type Tensor struct {
+	   	Type reflect.Type
+	   	Value reflect.Value // slice of float64, float32, uint8, int values ordered as CHW
+	   	Channels,Height,Width int
+	   }
+	   //	gets base64-encoded xz-compressed stream as a string prefixed by \xE2\x9C\x97` (✗`)
+	   func (*) Decode(string)
+	   //	returns base64-encoded xz-compressed stream as a string prefixed by \xE2\x9C\x97` (✗`)
+	   func () String() string
+
+	   	csv.Source(fu.File(),tables.Meta(mlutil.Pixmap(mlutil.Gray32f),"image").As("Image"))
+
+	   	// network params
+	   	csv.Source(fu.File(),
+	   		csv.String("name").As("Name"),
+	   		csv.Tensor32f("values").As("Values"))
+
+	   	csv.Sink(fu.File(),
+	      		csv.Column("Name").As("name"),
+	      		csv.Column("Values").As("values"))
+
+	   	tensor is packed into xz compressed stream and is encoded as base64 string
+	   	it's prefiexed by \xE2\x9C\x97` (✗`)
+
+	      	pred, metrics,err := ??.Estimator{}.Feed(...).Fit()
+	   	pred, metrics := ??.Estimator{}.Feed(...).LuckyFit()
+	       metrics,err := ??.Estimator{}.Feed(...).Estimate()
+	      	metrics := ??.Estimator{}.Feed(...).LuckyEstimate()
+
+	   	metrics := nn.Estimator{
+	   		Network:   mnistMLP0,
+	   		Initial:   Source, // parameters -> name,tensor
+	                              //               layer1,✗`MQoyCjMKNAo=
+	   		Optimizer: &nn.Adam{Lr: .001},
+	   		Loss:      &nn.LabelCrossEntropyLoss{},
+	   		Input:     mx.Dim(1, 28, 28),
+	   		Epochs:    10,
+	   		Seed:      42,
+	   		Batch:     32 }.
+	   	Feed(mlutil.Dataset{
+	   		Source: mnist.Source.Kfold(42, 5, "Fold").Parallel().MemCache(),
+	   		Features: []string{"Image"},
+	   		Kfold: "Fold",
+	   		Label: "Label"
+	   	}).
+	   	//LuckyFit(mlutil.Verbose(mlutil.Printing,1*time.Second))
+	   	LuckyEstimate(
+	   		mlutil.Verbose(nn.Printing,1*time.Second),
+	   		metrics.Accuracy{})
+
+	   	??? LuckyGridFit?
+	*/
 	acc, params, err := gym.Train(mx.CPU, mnistMLP0)
 	assert.NilError(t, err)
 	assert.Assert(t, acc >= 0.96)

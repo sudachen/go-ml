@@ -34,6 +34,15 @@ func (q *Bits) Set(i int, v bool) {
 	}
 }
 
+func (q *Bits) Or_(a Bits) {
+	if a.Len() > q.Len() {
+		*q = q.Grow(a.Len())
+	}
+	for i, x := range a.b {
+		q.b[i] |= x
+	}
+}
+
 func (q Bits) Bit(i int) bool {
 	j := int(i / _W)
 	m := uint(1) << (i % _W)

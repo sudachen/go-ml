@@ -1,10 +1,12 @@
 package mlutil
 
 import (
+	"fmt"
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-foo/lazy"
 	"golang.org/x/xerrors"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -12,6 +14,18 @@ type Struct struct {
 	Names   []string
 	Columns []reflect.Value
 	Na      Bits
+}
+
+func (lr Struct) String() string {
+	r := make([]string, len(lr.Names))
+	for i, n := range lr.Names {
+		v := (interface{})("<nil>")
+		if lr.Columns[i].IsValid() {
+			v = lr.Columns[i].Interface()
+		}
+		r[i] = fmt.Sprintf("%v:%v", n, fu.Ife(lr.Na.Bit(i), "N/A", v))
+	}
+	return "Struct{" + strings.Join(r, ",") + "}"
 }
 
 func (lr Struct) Copy(extra int) Struct {

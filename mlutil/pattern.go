@@ -1,6 +1,8 @@
 package mlutil
 
 import (
+	"fmt"
+	"github.com/sudachen/go-foo/lazy"
 	"strings"
 )
 
@@ -11,6 +13,29 @@ import (
 	123textE + 123*E -> 55*5 => 55text5
 
 */
+
+func makesubst(subst string) func(string) string {
+	counter := lazy.AtomicCounter{1}
+	j := strings.Index(subst, "*")
+	if j < 0 {
+		return func(v string) string {
+			if len(v) == 0 {
+				return subst
+			}
+			return subst + fmt.Sprint(counter.PostInc())
+		}
+	}
+	if j == 0 {
+		return func(v string) string { return v + subst[1:] }
+	}
+	if j == len(subst)-1 {
+		return func(v string) string { return subst[:j] + v }
+	}
+	return func(v string) string {
+		return subst[:j] + v + subst[j+1:]
+	}
+}
+
 func Starsub(pattern, subst string) func(string) (string, bool) {
 	j := strings.Index(pattern, "*")
 	if j < 0 {
@@ -25,6 +50,9 @@ func Starsub(pattern, subst string) func(string) (string, bool) {
 		right := pattern[1:]
 		if right[len(right)-1] == '*' {
 			center := right[:len(right)-1]
+			if subst[0] != '*' && subst[len(subst)-1] != '*' {
+				panic("substitution must be like *blablabla*")
+			}
 			subst = subst[1 : len(subst)-1]
 			return func(v string) (string, bool) {
 				if k := strings.Index(v, center); k > 0 {
@@ -33,34 +61,31 @@ func Starsub(pattern, subst string) func(string) (string, bool) {
 				return v, false
 			}
 		}
-		subst = subst[1:]
+		f := makesubst(subst)
 		return func(v string) (string, bool) {
 			if strings.HasSuffix(v, right) {
-				return v[:len(v)-len(right)] + subst, true
+				return f(v[:len(v)-len(right)]), true
 			}
 			return v, false
 		}
 	}
 	if j == len(pattern)-1 {
 		left := pattern[:j]
-		subst = subst[:len(subst)-1]
+		f := makesubst(subst)
 		return func(v string) (string, bool) {
 			if strings.HasPrefix(v, left) {
-				return subst + v[len(left):], true
+				return f(v[len(left):]), true
 			}
 			return v, false
 		}
-
 	}
 	// 	123textE + 123*E -> 55*5 => 55text5
 	left := pattern[:j]
 	right := pattern[j+1:]
-	sj := strings.Index(subst, "*")
-	sleft := subst[:sj]
-	sright := subst[sj+1:]
+	f := makesubst(subst)
 	return func(v string) (string, bool) {
 		if len(v) > len(left)+len(right) && strings.HasPrefix(v, left) && strings.HasSuffix(v, right) {
-			return sleft + v[len(left):len(v)-len(right)] + sright, true
+			return f(v[len(left) : len(v)-len(right)]), true
 		}
 		return v, false
 	}
