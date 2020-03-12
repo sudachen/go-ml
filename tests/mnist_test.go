@@ -55,15 +55,15 @@ func Test_mnistMLP0(t *testing.T) {
 	   	tensor is packed into xz compressed stream and is encoded as base64 string
 	   	it's prefiexed by \xE2\x9C\x97` (✗`)
 
-	      	pred, metrics,err := ??.Estimator{}.Feed(...).Fit()
-	   	pred, metrics := ??.Estimator{}.Feed(...).LuckyFit()
-	       metrics,err := ??.Estimator{}.Feed(...).Estimate()
-	      	metrics := ??.Estimator{}.Feed(...).LuckyEstimate()
+	      	pred, metrics,err := ??.Model{}.Feed(...).Fit()
+	   	pred, metrics := ??.model{}.Feed(...).LuckyFit()
+	       metrics, err := ??.model{}.Feed(...).Estimate()
+	      	metrics := ??.model{}.Feed(...).LuckyEstimate()
 
-	   	metrics := nn.Estimator{
+	   	metrics := nn.Model{
 	   		Network:   mnistMLP0,
-	   		Initial:   Source, // parameters -> name,tensor
-	                              //               layer1,✗`MQoyCjMKNAo=
+	   		Initial:   Source, // name,data
+	                           // layer1,✗`MQoyCjMKNAo=
 	   		Optimizer: &nn.Adam{Lr: .001},
 	   		Loss:      &nn.LabelCrossEntropyLoss{},
 	   		Input:     mx.Dim(1, 28, 28),

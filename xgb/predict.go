@@ -1,19 +1,22 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/xgb/capi"
-	"reflect"
 )
 
-func (x XGBoost) Predict(lr mlutil.Struct) mlutil.Struct {
-	m := matrix{make([]float32, len(x.features)), nil}.
-		set(0, lr, -1, x.features).create(false, 1)
+func (x xgbinstance) Predict(t *tables.Table) *tables.Table {
+	matrix, err := t.For(x.features...).Matrix()
+	if err != nil { panic(err) }
+	m := matrix32(matrix)
 	defer m.Free()
 	y := capi.Predict(x.handle, m.handle, 0)
-	cols := make([]reflect.Value, len(x.predicts))
-	for i, c := range y {
-		cols[i] = reflect.ValueOf(c)
+	matrix2 := tables.Matrix{
+		Features:    y,
+		Labels:      nil,
+		Width:       len(x.predicts),
+		Length:      matrix.Length,
+		LabelsWidth: 0,
 	}
-	return mlutil.Struct{x.predicts, cols, mlutil.Bits{}}
+	return tables.FromMatrix(matrix2, x.predicts...)
 }

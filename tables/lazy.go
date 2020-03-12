@@ -46,7 +46,7 @@ func (t *Table) Lazy() Lazy {
 }
 
 func (zf Lazy) Map(f interface{}) Lazy {
-	if p, ok := f.(mlutil.Predictor); ok {
+	if p, ok := f.(Predictor); ok {
 		return zf.Predict(p, false)
 	}
 	return func() lazy.Stream {
@@ -76,7 +76,7 @@ func (zf Lazy) Map(f interface{}) Lazy {
 }
 
 func (zf Lazy) Transform(f interface{}) Lazy {
-	if p, ok := f.(mlutil.Predictor); ok {
+	if p, ok := f.(Predictor); ok {
 		return zf.Predict(p, true)
 	}
 	return func() lazy.Stream {
@@ -133,6 +133,7 @@ func (z Lazy) Parallel(concurrency ...int) Lazy {
 }
 
 const iniCollectLength = 13
+const maxChankLength = 10000
 
 func (z Lazy) Collect() (t *Table, err error) {
 	length := 0
@@ -220,7 +221,7 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 						cj = fu.IndexOf(column, lr.Names)
 					}
 					p := nr.Float()
-					val := reflect.ValueOf(fu.Ifei(p < prob, 1, 0))
+					val := reflect.ValueOf(p < prob)
 					lr = lr.Copy(cj + 1)
 					if cj < 0 {
 						lr.Names = append(lr.Names, column)
@@ -238,37 +239,10 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 	}
 }
 
-func (zf Lazy) Predict(pred mlutil.Predictor, transform bool) Lazy {
+func (zf Lazy) Predict(pred Predictor, transform bool) Lazy {
 	z := zf()
 	return func() lazy.Stream {
-		pool := lazy.AtomicPool(func(no int) interface{} {
-			if ppred, ok := pred.(mlutil.ParallelPredictor); ok {
-				p, _ := ppred.Acquire()
-				return p
-			}
-			if no == 0 {
-				return pred
-			}
-			return nil
-		})
-		return func(index uint64) (v reflect.Value, err error) {
-			v, err = z(index)
-			if index == lazy.STOP {
-				pool.Close()
-				return
-			}
-			if err != nil || v.Kind() == reflect.Bool {
-				return
-			}
-			q, no := pool.Allocate()
-			defer pool.Release(no)
-			lrx := v.Interface().(mlutil.Struct)
-			lr := q.(mlutil.Predictor).Predict(lrx)
-			if !transform {
-				return reflect.ValueOf(lr), nil
-			}
-			return reflect.ValueOf(lrx.With(lr)), nil
-		}
+		return z
 	}
 }
 

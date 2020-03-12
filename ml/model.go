@@ -1,7 +1,8 @@
-package mlutil
+package ml
 
 import (
 	"github.com/sudachen/go-foo/lazy"
+	"github.com/sudachen/go-ml/tables"
 )
 
 type Dataset struct {
@@ -12,9 +13,9 @@ type Dataset struct {
 }
 
 /*
-ModelFarm is an ML alghoritm grows from a data to predict something
+HungryModel is an ML alghoritm grows from a data to predict something
 */
-type ModelFarm interface {
+type HungryModel interface {
 	Feed(Dataset) FatModel
 }
 
@@ -36,13 +37,6 @@ func (f FatModel) LuckyFit(opts ...interface{}) Predictor {
 Predictor is a trained model able to predict by the same features it's trained
 */
 type Predictor interface {
-	Predict(x Struct) Struct
+	tables.Predictor
 	Close() error
-}
-
-/*
-ParallelPredictor predictor able to work in concurrent environment
-*/
-type ParallelPredictor interface {
-	Acquire() (Predictor, error)
 }

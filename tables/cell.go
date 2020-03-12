@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/sudachen/go-ml/mlutil"
 	"reflect"
+	"strings"
 )
 
 type Cell struct {
@@ -13,6 +14,19 @@ type Cell struct {
 func (c Cell) String() string {
 	if c.Kind() == reflect.String {
 		return c.Interface().(string)
+	}
+	if c.Type() == TensorType {
+		z := c.Interface().(*Tensor)
+		s := []string{}
+		for i:=0;i<4;i++{
+			if i == 3 || i >= z.Volume() {
+				s = append(s,">")
+				break
+			} else if i < z.Volume() {
+				s = append(s,fmt.Sprint(z.Interface(i)))
+			}
+		}
+		return fmt.Sprintf("(%dx%dx%d){%v}",z.Channels,z.Height,z.Width,strings.Join(s,","))
 	}
 	return fmt.Sprint(c.Interface())
 }

@@ -1,8 +1,10 @@
 package xgb
 
-import "github.com/sudachen/go-ml/mlutil"
+import (
+	"github.com/sudachen/go-ml/ml"
+)
 
-type Estimator struct {
+type Model struct {
 	Algorithm    booster
 	Function     objective
 	Iterations   int
@@ -14,8 +16,8 @@ type Estimator struct {
 	Extra        Params
 }
 
-func (e Estimator) Feed(ds mlutil.Dataset) mlutil.FatModel {
-	return func(opts ...interface{}) (mlutil.Predictor, error) {
+func (e Model) Feed(ds ml.Dataset) ml.FatModel {
+	return func(opts ...interface{}) (ml.Predictor, error) {
 		return fit(e, ds, opts...)
 	}
 }

@@ -43,6 +43,17 @@ func (t *Table) Len() int {
 	return t.raw.Length
 }
 
+func (t *Table) FilteredLen(f func(int)bool) int {
+	if f != nil {
+		L := 0
+		for i:=0; i<t.raw.Length; i++ {
+			if f(i) { L++ }
+		}
+		return L
+	}
+	return t.Len()
+}
+
 /*
 Names returns list of column Names
 */
@@ -235,6 +246,26 @@ func (t *Table) Only(column ...string) *Table {
 	}
 	return MakeTable(names, rv, na, t.raw.Length)
 }
+
+func (t *Table) OnlyNames(column ...string) []string {
+	rn := mlutil.Bits{}
+	for _, c := range column {
+		like := mlutil.Pattern(c)
+		for i, x := range t.raw.Names {
+			if like(x) {
+				rn.Set(i, true)
+			}
+		}
+	}
+	names := make([]string, 0, rn.Count())
+	for i := range t.raw.Names {
+		if rn.Bit(i) {
+			names = append(names, t.raw.Names[i])
+		}
+	}
+	return names
+}
+
 
 /*
 Append adds data to table

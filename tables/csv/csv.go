@@ -45,100 +45,13 @@ const initialCapacity = 101
 	"another one",200,3,0.2`
 
 	csv.Read(fu.StringIO(csvContent),
-                csv.Int("f_**").As("Number"), // hide f_* for next rules
+                csv.TzeInt("f_**").As("Number"), // hide f_* for next rules
 				csv.Float64("f_*").As("Feature*"),
 				csv.String("s*").As("Text*"))
 */
 
 func Read(source interface{}, opts ...interface{}) (t *tables.Table, err error) {
-	var f io.ReadCloser
-	if e, ok := source.(fu.Input); ok {
-		if f, err = e.Open(); err != nil {
-			return
-		}
-		defer f.Close()
-		return dqread(f, opts...)
-	}
-	if e, ok := source.(string); ok {
-		f, err = os.Open(e)
-		defer f.Close()
-		return dqread(f, opts...)
-	}
-	if rd, ok := source.(io.Reader); ok {
-		return dqread(rd, opts...)
-	}
-	return nil, xerrors.Errorf("csv reader does not know source type %v", reflect.TypeOf(source).String())
-}
-
-func dqread(source io.Reader, opts ...interface{}) (t *tables.Table, err error) {
-	dq := fu.Decompress(source)
-	defer dq.Close()
-	return read(dq, opts...)
-}
-
-func read(source io.Reader, opts ...interface{}) (t *tables.Table, err error) {
-	rdr := csv.NewReader(source)
-	rdr.Comma = fu.RuneOption(Comma(rdr.Comma), opts)
-	var vals []string
-	if vals, err = rdr.Read(); err != nil {
-		return
-	}
-	fm, names, err := mapFields(vals, opts)
-	if err != nil {
-		return
-	}
-	columns := make([]reflect.Value, len(names))
-	na := make([]mlutil.Bits, len(names))
-	rdr.FieldsPerRecord = len(names)
-	for i := range columns {
-		columns[i] = reflect.MakeSlice(reflect.SliceOf(fm[i].Type()), 0, initialCapacity)
-	}
-
-	stopC := make(chan []string)
-	csvC := make(chan []string)
-	go func() {
-		for {
-			var vx []string
-			vx, err = rdr.Read() // function err
-			if err != nil {
-				if err == io.EOF {
-					err = nil
-				}
-				close(csvC)
-				return
-			}
-			select {
-			case csvC <- vx:
-			case <-stopC:
-				return
-			}
-		}
-	}()
-
-	length := 0
-	for {
-		vals, ok := <-csvC
-		if !ok {
-			break
-		}
-		for j, v := range vals {
-			x, xna, e := fm[j].Convert(v)
-			if e != nil {
-				close(stopC)
-				return nil, e
-			}
-			columns[j] = reflect.Append(columns[j], x)
-			na[j].Set(length, xna)
-		}
-		length++
-	}
-	if err != nil {
-		return
-	}
-	for i, m := range fm {
-		m.AutoConvert(&columns[i], &na[i])
-	}
-	return tables.MakeTable(names, columns, na, length), nil
+	return Source(source, opts...).Collect()
 }
 
 func Source(source interface{}, opts ...interface{}) tables.Lazy {
@@ -173,7 +86,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 			return lazy.Error(err)
 		}
 
-		rdr.FieldsPerRecord = len(names)
+		rdr.FieldsPerRecord = len(vals)
 		stopC := make(chan struct{})
 		csvC := make(chan reflect.Value)
 
@@ -183,38 +96,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				err  error
 			}
 			width := len(names)
-			output := &mlutil.Struct{}
-			input := []string{}
-			concurrency := 2
-			iC := make(chan int, concurrency)
-			oC := make(chan struct {
-				mlutil.Bits
-				error
-			}, concurrency)
 			nC := make(chan line)
-			for i := 0; i < concurrency; i++ {
-				go func() {
-					for {
-						if i, ok := <-iC; ok {
-							err := error(nil)
-							na := mlutil.Bits{}
-							for j := i; j < width; j += concurrency {
-								v, b, e := fm[j].Convert(input[j])
-								if e != nil {
-									err = e
-									break
-								}
-								output.Columns[j] = v
-								na.Set(j, b)
-							}
-							oC <- struct {
-								mlutil.Bits
-								error
-							}{na, err}
-						}
-					}
-				}()
-			}
 			stopf := make(chan struct{})
 			go func() {
 				for {
@@ -236,20 +118,17 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 					}
 					x = reflect.ValueOf(l.err)
 				} else {
-					output = &mlutil.Struct{names, make([]reflect.Value, width), mlutil.Bits{}}
-					input = l.vals
-					for i := 0; i < concurrency; i++ {
-						iC <- i
+					// TODO: parallel Convert over struct fields. if f[i].field % fibersCount == fiberNo ...
+					// TODO:  also use shered preallocated NA bits, and put clean (reduced) copy to struct
+					output := mlutil.Struct{names,make([]reflect.Value,width), mlutil.Bits{}}
+					for i,v := range l.vals {
+						na := false
+						if na, err = fm[i].Convert(v,&output.Columns[fm[i].field],fm[i].index,fm[i].width); err != nil {
+							break
+						}
+						if na { output.Na.Set(fm[i].field,true) }
 					}
-					count := 0
-					err = nil
-					x = reflect.ValueOf(*output)
-					for count < concurrency {
-						fe := <-oC
-						err = fu.Fnze(err, fe.error)
-						output.Na.Or_(fe.Bits)
-						count++
-					}
+					x = reflect.ValueOf(output)
 					if err != nil {
 						x = reflect.ValueOf(err)
 					}
@@ -262,7 +141,6 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 			}
 			cls.Close()
 			close(stopf)
-			close(iC)
 			close(csvC)
 		}()
 
@@ -302,7 +180,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				csv.Comma('|'),
 				csv.Column("feature*").Round(3).As("Feature*"))
 
-	csv.Write(t,fu.Lzma2(s3.External("profile:bucket/testfile.csv.xz")),
+	csv.Write(t,fu.Lzma2(fu.External("gc://$/testfile.csv.xz")),
 				csv.Comma('|'),
 				csv.Column("feature_1").As("Feature1"))
 */

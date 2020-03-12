@@ -82,12 +82,14 @@ func (ce Enumerator) enumerate(v string) (e int, ok bool) {
 func (ce Enumerator) Type() reflect.Type {
 	return enumType // it's the Enum meta-column
 }
-func (ce Enumerator) Convert(v string) (reflect.Value, bool, error) {
+func (ce Enumerator) Convert(v string, value *reflect.Value, _,_ int)(na bool, err error) {
 	if v == "" {
-		return reflect.ValueOf(""), true, nil
+		*value = reflect.ValueOf("")
+		return true, nil
 	}
 	e, _ := ce.enumerate(v)
-	return reflect.ValueOf(Enum{v, e}), false, nil
+	*value = reflect.ValueOf(Enum{v, e})
+	return
 }
 func (ce Enumerator) Format(x reflect.Value, na bool) string {
 	if na {
@@ -111,9 +113,10 @@ func (ce IntegerEnumerator) Type() reflect.Type {
 	return mlutil.Int
 }
 
-func (ce IntegerEnumerator) Convert(v string) (reflect.Value, bool, error) {
+func (ce IntegerEnumerator) Convert(v string, value *reflect.Value, _,_ int)(bool, error) {
 	if v == "" {
-		return reflect.ValueOf(""), true, nil
+		*value = reflect.ValueOf("")
+		return true, nil
 	}
 	e, ok := ce.enumerate(v)
 	if !ok {
@@ -121,7 +124,8 @@ func (ce IntegerEnumerator) Convert(v string) (reflect.Value, bool, error) {
 		ce.rev = append(ce.rev, v)
 		ce.mu.Unlock()
 	}
-	return reflect.ValueOf(e), false, nil
+	*value = reflect.ValueOf(e)
+	return false, nil
 }
 
 func (ce IntegerEnumerator) Format(x reflect.Value, na bool) string {
@@ -143,9 +147,10 @@ func (ce Float32Enumerator) Type() reflect.Type {
 	return mlutil.Float32
 }
 
-func (ce Float32Enumerator) Convert(v string) (val reflect.Value, na bool, err error) {
-	if val, na, err = ce.IntegerEnumerator.Convert(v); err == nil {
-		val = reflect.ValueOf(float32(val.Int()))
+func (ce Float32Enumerator) Convert(v string, value *reflect.Value, _,_ int)(na bool, err error) {
+	val := reflect.Value{}
+	if na, err = ce.IntegerEnumerator.Convert(v,&val,0,0); err == nil {
+		*value = reflect.ValueOf(float32(val.Int()))
 	}
 	return
 }
@@ -156,10 +161,12 @@ func (ce TextEnumerator) Type() reflect.Type {
 	return mlutil.String
 }
 
-func (ce TextEnumerator) Convert(v string) (reflect.Value, bool, error) {
+func (ce TextEnumerator) Convert(v string, value *reflect.Value, _,_ int) (bool, error) {
 	if v == "" {
-		return reflect.ValueOf(""), true, nil
+		*value = reflect.ValueOf("")
+		return true, nil
 	}
 	ce.enumerate(v)
-	return reflect.ValueOf(v), false, nil
+	*value = reflect.ValueOf(v)
+	return false, nil
 }

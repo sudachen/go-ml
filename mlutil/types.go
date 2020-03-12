@@ -22,10 +22,14 @@ var String = reflect.TypeOf("")
 var Bool = reflect.TypeOf(true)
 var Ts = reflect.TypeOf(time.Time{})
 
+var StructType = reflect.TypeOf(Struct{})
+var Fixed8Type = reflect.TypeOf(Fixed8{0})
+var Fixed8Zero = reflect.ValueOf(Fixed8{0})
+
 var IntZero = reflect.ValueOf(int(0))
 var Float32Zero = reflect.ValueOf(float32(0))
 var Float64Zero = reflect.ValueOf(float64(0))
 var TsZero = reflect.ValueOf(time.Time{})
-var StructType = reflect.ValueOf(Struct{})
 var True = reflect.ValueOf(true)
 var False = reflect.ValueOf(false)
+

@@ -10,16 +10,22 @@ func LibVersion() mlutil.VersionType {
 	return mlutil.VersionType(capi.LibVersion)
 }
 
-type XGBoost struct {
+type xgbinstance struct {
 	handle   unsafe.Pointer
-	features map[string]int
+	features []string
 	predicts []string
 }
 
-func (x XGBoost) Close() (err error) {
+func (x xgbinstance) Close() (_ error) {
+	capi.Close(x.handle)
+	x.handle = nil
 	return
 }
 
-/*func (x XGBoost) Acquire() (base.Predictor,error) {
+func (x xgbinstance) BatchSize() (min, max int) {
+	return 1,64
+}
+
+/*func (x XGBoost) Acquire() (base.xgbinstance,error) {
 	return x, nil
 }*/

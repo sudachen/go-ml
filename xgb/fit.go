@@ -3,111 +3,33 @@ package xgb
 import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/ml"
+	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/xgb/capi"
 	"golang.org/x/xerrors"
-	"reflect"
 )
 
-func fit(e Estimator, dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost, err error) {
-	var dat, labdat []float32
-	var dat2, labdat2 []float32
-
-	lj := -1
-	kj := -2
-	length := 0
-	length2 := 0
-
-	features := map[string]int{}
-	err = lazy.Source(dataset.Source).Drain(func(v reflect.Value) error {
-
-		if v.Kind() == reflect.Bool {
-			return nil
-		}
-		lr := v.Interface().(mlutil.Struct)
-
-		if lj < 0 {
-			lj = fu.IndexOf(dataset.Label, lr.Names)
-			if lj < 0 {
-				panic(xerrors.Errorf("there is no label column `%v`", dataset.Label))
-			}
-		}
-		if kj == -2 {
-			if dataset.Test != "" {
-				kj = fu.IndexOf(dataset.Test, lr.Names)
-			} else {
-				kj = -1
-			}
-		}
-
-		crss := false
-		if kj >= 0 {
-			crss = lr.Columns[kj].Int() > 0
-		}
-
-		if len(features) == 0 {
-			lx := fu.Lexic{}
-			for _, k := range dataset.Features {
-				lx = append(lx, mlutil.Pattern(k))
-			}
-			i := 0
-			for j, n := range lr.Names {
-				if j != lj && j != kj {
-					if lx.Accepted(n, true) {
-						features[n] = i
-						i++
-					}
-				}
-			}
-			if len(features) == 0 {
-				return xerrors.Errorf("there are no features to learn")
-			}
-		}
-
-		for i, c := range lr.Columns {
-			if c.Kind() != reflect.Float32 {
-				c = mlutil.Convert(c, lr.Na.Bit(i), mlutil.Float32)
-			}
-			if i == lj {
-				if crss {
-					labdat2 = append(labdat2, c.Interface().(float32))
-				} else {
-					labdat = append(labdat, c.Interface().(float32))
-				}
-			} else if i != kj {
-				if crss {
-					dat2 = append(dat2, c.Interface().(float32))
-				} else {
-					dat = append(dat, c.Interface().(float32))
-				}
-			}
-		}
-
-		if crss {
-			length2++
-		} else {
-			length++
-		}
-
-		return nil
-	})
+func fit(e Model, dataset ml.Dataset, opts ...interface{}) (xgb xgbinstance, err error) {
+	t,err := tables.Lazy(dataset.Source).Collect()
+	features := t.OnlyNames(dataset.Features...)
+	train, err := t.For(features...).IfNot(dataset.Test).Label(dataset.Label).Matrix()
+	test, err := t.For(features...).If(dataset.Test).Label(dataset.Label).Matrix()
 
 	if err != nil {
 		return
 	}
-	m := matrix32(dat, labdat, length)
+	m := matrix32(train)
 	defer m.Free()
 
 	predictName := fu.Fnzs(e.Result, "Prediction")
 	predicts := []string{predictName}
 
-	if kj >= 0 {
-		m2 := matrix32(dat2, labdat2, length2)
+	if test.Length > 0 {
+		m2 := matrix32(test)
 		defer m2.Free()
-		xgb = XGBoost{capi.Create2(m.handle, m2.handle), features, predicts}
+		xgb = xgbinstance{capi.Create2(m.handle, m2.handle), features, predicts}
 	} else {
-		xgb = XGBoost{capi.Create2(m.handle), features, predicts}
+		xgb = xgbinstance{capi.Create2(m.handle), features, predicts}
 	}
 
 	if e.Algorithm != booster("") {
@@ -132,7 +54,7 @@ func fit(e Estimator, dataset mlutil.Dataset, opts ...interface{}) (xgb XGBoost,
 
 	capi.SetParam(xgb.handle, "num_feature", fmt.Sprint(len(features)))
 	if e.Function == Softprob || e.Function == Softmax {
-		x := int(fu.Maxr(fu.Maxr(0, labdat...), labdat2...))
+		x := int(fu.Maxr(fu.Maxr(0, train.Labels...), test.Labels...))
 		if x < 0 {
 			panic(xerrors.Errorf("labels don't contain enough classes or label values is incorrect"))
 		}

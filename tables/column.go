@@ -71,11 +71,11 @@ func (c *Column) Strings() []string {
 }
 
 /*
-Int returns column' value converted to int
+TzeInt returns column' value converted to int
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Age").Int(0) -> 32
-	t.Col("Age").Index(0).Int() -> 32
+	t.Col("Age").TzeInt(0) -> 32
+	t.Col("Age").Index(0).TzeInt() -> 32
 */
 func (c *Column) Int(row int) int {
 	return c.Index(row).Int()
@@ -413,7 +413,7 @@ Index returns cell with value at specified index
 	c := t.Col("Age").Index(0)
 	c.String() -> "33"
 	c.Float32() -> 33.0
-	c.Int() -> 33
+	c.TzeInt() -> 33
 */
 func (c *Column) Index(i int) Cell {
 	return Cell{c.column.Index(i)}
@@ -423,7 +423,7 @@ func (c *Column) Index(i int) Cell {
 Max returns cell with max column' maximal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Age").Max().Int() -> 44
+	t.Col("Age").Max().TzeInt() -> 44
 	t.Col("Rate").Max().Float32() -> 1.5
 */
 func (c *Column) Max() Cell {
@@ -434,7 +434,7 @@ func (c *Column) Max() Cell {
 Min returns cell with column' minimal value
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Age").Min().Int() -> 32
+	t.Col("Age").Min().TzeInt() -> 32
 	t.Col("Rate").Min().Float32() -> 1.2
 */
 func (c *Column) Min() Cell {

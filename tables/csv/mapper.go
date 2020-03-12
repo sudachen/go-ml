@@ -1,19 +1,31 @@
 package csv
 
 import (
+	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"reflect"
 )
 
+type formatter func(value reflect.Value, na bool) string
+type converter func(value string, field *reflect.Value, index,width int) (bool,error)
 type mapper struct {
 	CsvCol, TableCol string
 	valueType        reflect.Type
-	convert          func(string) (value reflect.Value, na bool, err error)
-	format           func(value reflect.Value, na bool) string
+	convert          converter
+	format           formatter
+	group            bool
+	field,index      int
+	width 			 int
+	name             string
 }
 
-func (m mapper) AutoConvert(column *reflect.Value, na *mlutil.Bits) {
+func Mapper(ccol, tcol string, t reflect.Type, conv converter, form formatter) mapper {
+	return mapper{ccol,tcol, t, conv, form, false, 0 ,0, 0, "" }
+}
+
+func (m mapper) Group() bool {
+	return m.group
 }
 
 func (m mapper) Type() reflect.Type {
@@ -23,11 +35,12 @@ func (m mapper) Type() reflect.Type {
 	return mlutil.String
 }
 
-func (m mapper) Convert(s string) (value reflect.Value, na bool, err error) {
+func (m mapper) Convert(value string, field *reflect.Value, index, width int) (na bool, err error) {
 	if m.convert != nil {
-		return m.convert(s)
+		return m.convert(value, field, index, width)
 	}
-	return reflect.ValueOf(s), false, nil
+	*field = reflect.ValueOf(value)
+	return
 }
 
 func (m mapper) Format(v reflect.Value, na bool) string {
@@ -36,18 +49,32 @@ func (m mapper) Format(v reflect.Value, na bool) string {
 
 func mapFields(header []string, opts []interface{}) (fm []mapper, names []string, err error) {
 	fm = make([]mapper, len(header))
-	names = make([]string, len(header))
+	names = make([]string, 0, len(header))
+	mask := mlutil.Bits{}
 	for _, o := range opts {
 		if x, ok := o.(resolver); ok {
 			v := x()
-			starsub := mlutil.Starsub(v.CsvCol, v.TableCol)
 			exists := false
-			for i, n := range header {
-				if names[i] == "" {
-					if c, ok := starsub(n); ok {
-						names[i] = c
+			if v.group {
+				like := mlutil.Pattern(v.CsvCol)
+				for i, n := range header {
+					if !mask.Bit(i) && like(n) {
+						v.name = v.TableCol
 						fm[i] = v
+						mask.Set(i,true)
 						exists = true
+						v.index++
+					}
+				}
+			} else {
+				starsub := mlutil.Starsub(v.CsvCol, v.TableCol)
+				for i, n := range header {
+					if !mask.Bit(i) {
+						if c, ok := starsub(n); ok {
+							v.name = c
+							fm[i] = v
+							exists = true
+						}
 					}
 				}
 			}
@@ -56,9 +83,20 @@ func mapFields(header []string, opts []interface{}) (fm []mapper, names []string
 			}
 		}
 	}
-	for i, n := range names {
-		if n == "" {
-			names[i] = header[i]
+	width := make([]int,len(header))
+	for i := range fm {
+		if fm[i].name == "" { fm[i].name = header[i] }
+		j := fu.IndexOf(fm[i].name,names)
+		if j < 0 {
+			j = len(names)
+			names = append(names,fm[i].name)
+		}
+		fm[i].field = j
+		width[j]++
+	}
+	for i := range fm {
+		if fm[i].group {
+			fm[i].width = width[fm[i].field]
 		}
 	}
 	return
