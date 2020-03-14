@@ -11,107 +11,128 @@ type Batch lazy.Source
 func (zf Lazy) Batch(length int) Batch {
 	return func() lazy.Stream {
 		z := zf()
-		wc := lazy.WaitCounter{Value: 0}
-		vC := make(chan reflect.Value)
-		tC := make(chan reflect.Value, 1)
-
-		go func() {
-			for {
-				v, ok := <-vC
-				if ok {
-					lr := v.Interface().(mlutil.Struct)
-					t := MakeTable(
-						lr.Names,
-						make([]reflect.Value, len(lr.Names)),
-						make([]mlutil.Bits, len(lr.Names)),
-						0)
-					for j := range lr.Names {
-						q := reflect.MakeSlice(reflect.SliceOf(lr.Columns[j].Type()), 0, length)
-						t.raw.Columns[j] = reflect.Append(q, lr.Columns[j])
-						t.raw.Na[j].Set(0, lr.Na.Bit(j))
-					}
-					t.raw.Length++
-				l:
-					for n := 1; n < length; n++ {
-						if v, ok = <-vC; !ok {
-							break l
-						}
-						lr := v.Interface().(mlutil.Struct)
-						for j := range lr.Names {
-							t.raw.Columns[j] = reflect.Append(t.raw.Columns[j], lr.Columns[j])
-							t.raw.Na[j].Set(n, lr.Na.Bit(j))
-						}
-						t.raw.Length++
-					}
-					tC <- reflect.ValueOf(t)
-				} else {
-					close(tC)
-					return
-				}
-			}
-		}()
-
-		stopFlag := lazy.AtomicFlag{0}
-		stop := func() {
-			if stopFlag.Set() {
-				close(vC)
-				select {
-				case <-tC:
-				default:
-				}
-			}
-		}
+		wc := lazy.WaitCounter{Value:0}
+		columns := []reflect.Value{}
+		na := []mlutil.Bits{}
+		names := []string{}
+		ac := lazy.AtomicCounter{Value:0}
 
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
 			if index == lazy.STOP || err != nil {
-				stop()
 				wc.Stop()
+				return
 			}
 
+			x := mlutil.True
 			if wc.Wait(index) {
-				ok := false
-				x := v
-
-				select {
-				case v, ok = <-tC:
-					if !ok {
-						stop()
+				if v.Kind() == reflect.Bool {
+					if !v.Bool() {
+						n := int(ac.Value % uint64(length))
+						if ac.Value != 0 {
+							if n == 0 { n = length }
+							v = reflect.ValueOf(MakeTable(names,columns,na,n))
+						}
 						wc.Stop()
-						return reflect.ValueOf(false), nil
 					}
-				default:
+					wc.Inc()
+					return v, nil
 				}
 
-				if x.Kind() != reflect.Bool {
-					vC <- x
+				lr := v.Interface().(mlutil.Struct)
+				ndx := ac.PostInc()
+				n := int(ndx % uint64(length))
+
+				if n == 0 {
+					if ndx != 0 {
+						x = reflect.ValueOf(MakeTable(names,columns,na,length))
+					}
+					names = lr.Names
+					width := len(names)
+					columns = make([]reflect.Value,width)
+					for i := range columns {
+						columns[i] = reflect.MakeSlice(reflect.SliceOf(lr.Columns[i].Type()),0,length)
+					}
+					na = make([]mlutil.Bits,width)
+				}
+
+				for i := range lr.Names {
+					columns[i] = reflect.Append(columns[i],lr.Columns[i])
+					na[i].Set(n,lr.Na.Bit(i))
 				}
 
 				wc.Inc()
-
-				if ok {
-					return
-				}
-				if x.Kind() == reflect.Bool && !x.Bool() {
-					stop()
-				}
-				return reflect.ValueOf(true), nil
+				return x, nil
 			}
-			return reflect.ValueOf(false), nil
+			return mlutil.False, nil
 		}
 	}
 }
 
-func (z Batch) Parallel(concurrency ...int) Batch {
-	return Batch(lazy.Source(z).Parallel(concurrency...))
+func (zf Batch) Flat() Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		wc := lazy.WaitCounter{Value:0}
+		ac := lazy.AtomicCounter{Value:0}
+		t := (*Table)(nil)
+		row := 0
+		return func(index uint64) (v reflect.Value, err error) {
+			v = mlutil.False
+			if index == lazy.STOP || err != nil {
+				wc.Stop()
+				return
+			}
+			if wc.Wait(index) {
+				if t == nil {
+					v, err = z(ac.PostInc())
+					if err != nil || (v.Kind() == reflect.Bool  && !v.Bool()) {
+						wc.Stop()
+						return
+					}
+					if v.Kind() != reflect.Bool {
+						t = v.Interface().(*Table)
+						row = 0
+					}
+				}
+				if t != nil {
+					v = reflect.ValueOf(t.Struct(row))
+					row++
+					if row >= t.Len() { t = nil }
+				}
+				wc.Inc()
+				return v, nil
+			}
+			return mlutil.False, nil
+		}
+	}
 }
 
-func (z Batch) Drain(sink Sink) (err error) {
-	return lazy.Source(z).Drain(sink)
-}
-
-func (z Batch) LuckyDrain(sink Sink) {
-	if err := z.Drain(sink); err != nil {
-		panic(err)
+func (zf Batch) Transform(tx func(*Table)(*Table,error)) Batch {
+	return func() lazy.Stream {
+		z := zf()
+		f := lazy.AtomicFlag{Value:0}
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if index == lazy.STOP || err != nil {
+				f.Set()
+				return
+			}
+			if !f.State() {
+				if v.Kind() != reflect.Bool {
+					lr := v.Interface().(*Table)
+					t, err := tx(lr)
+					if err != nil {
+						f.Set()
+						return mlutil.False, err
+					}
+					return reflect.ValueOf(t), nil
+				}
+				if v.Bool() {
+					return mlutil.True, nil
+				}
+				f.Set()
+			}
+			return mlutil.False, nil
+		}
 	}
 }

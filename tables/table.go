@@ -8,7 +8,6 @@ import (
 	"github.com/sudachen/go-foo/fu"
 	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
-	"math"
 	"math/bits"
 	"reflect"
 )
@@ -240,6 +239,33 @@ func (t *Table) Only(column ...string) *Table {
 	na := make([]mlutil.Bits, 0, len(names))
 	for i, v := range t.raw.Columns {
 		if rn.Bit(i) {
+			rv = append(rv, v.Slice(0, t.raw.Length))
+			na = append(na, t.raw.Na[i])
+		}
+	}
+	return MakeTable(names, rv, na, t.raw.Length)
+}
+
+func (t *Table) Except(column ...string) *Table {
+	rn := mlutil.Bits{}
+	for _, c := range column {
+		like := mlutil.Pattern(c)
+		for i, x := range t.raw.Names {
+			if like(x) {
+				rn.Set(i, true)
+			}
+		}
+	}
+	names := make([]string, 0, len(t.raw.Names)-rn.Count())
+	for i := range t.raw.Names {
+		if !rn.Bit(i) {
+			names = append(names, t.raw.Names[i])
+		}
+	}
+	rv := make([]reflect.Value, 0, len(names))
+	na := make([]mlutil.Bits, 0, len(names))
+	for i, v := range t.raw.Columns {
+		if !rn.Bit(i) {
 			rv = append(rv, v.Slice(0, t.raw.Length))
 			na = append(na, t.raw.Na[i])
 		}
@@ -480,6 +506,37 @@ func (t *Table) FillNa(r interface{}) *Table {
 	return MakeTable(t.raw.Names, columns, na, t.raw.Length)
 }
 
+func (t *Table) Struct(row int) mlutil.Struct {
+	names := t.raw.Names
+	columns := make([]reflect.Value,len(names))
+	na := mlutil.Bits{}
+	for i,c := range t.raw.Columns {
+		columns[i] = c.Index(row)
+		na.Set(i,t.raw.Na[i].Bit(row))
+	}
+	return mlutil.Struct{ names, columns, na}
+}
+
+func (t *Table) With(column *Column, name string) *Table {
+	if column.Len() != t.raw.Length {
+		panic(xerrors.Errorf("column length is not match table length"))
+	}
+	if fu.IndexOf(name,t.raw.Names) >= 0 {
+		panic(xerrors.Errorf("column with name `%v` alreday exists in the table",name))
+	}
+	names := make([]string,len(t.raw.Names),len(t.raw.Names)+1)
+	columns := make([]reflect.Value,len(t.raw.Names),len(t.raw.Names)+1)
+	na := make([]mlutil.Bits,len(t.raw.Names),len(t.raw.Names)+1)
+	copy(names,t.raw.Names)
+	copy(columns,t.raw.Columns)
+	copy(na,t.raw.Na)
+	names = append(names,name)
+	columns = append(columns,column.column)
+	na = append(na,column.na)
+	return MakeTable(names,columns,na,t.raw.Length)
+}
+
+/*
 func Shape(x interface{}, names ...string) *Table {
 	v := reflect.ValueOf(x)
 	vt := v.Type()
@@ -517,3 +574,4 @@ func Shape32(v []float32, names ...string) *Table {
 	}
 	return MakeTable(names, columns, na, length)
 }
+*/

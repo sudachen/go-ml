@@ -17,7 +17,7 @@ type Model struct {
 }
 
 func (e Model) Feed(ds ml.Dataset) ml.FatModel {
-	return func(opts ...interface{}) (ml.Predictor, error) {
+	return func(opts ...ml.Fitparam) (ml.FeaturesMapper, error) {
 		return fit(e, ds, opts...)
 	}
 }

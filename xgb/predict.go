@@ -5,18 +5,18 @@ import (
 	"github.com/sudachen/go-ml/xgb/capi"
 )
 
-func (x xgbinstance) Predict(t *tables.Table) *tables.Table {
-	matrix, err := t.For(x.features...).Matrix()
+func (x xgbinstance) MapFeatures(t *tables.Table) (*tables.Table, error) {
+	matrix, err := t.Matrix(x.features)
 	if err != nil { panic(err) }
 	m := matrix32(matrix)
 	defer m.Free()
 	y := capi.Predict(x.handle, m.handle, 0)
-	matrix2 := tables.Matrix{
+	pred := tables.Matrix{
 		Features:    y,
 		Labels:      nil,
-		Width:       len(x.predicts),
+		Width:       len(y)/matrix.Length,
 		Length:      matrix.Length,
 		LabelsWidth: 0,
 	}
-	return tables.FromMatrix(matrix2, x.predicts...)
+	return t.Except(x.features...).With(pred.AsColumn(), x.predicts), nil
 }

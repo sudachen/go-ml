@@ -87,61 +87,26 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 		}
 
 		rdr.FieldsPerRecord = len(vals)
+
+		type line struct {
+			vals []string
+			err  error
+		}
+		nC := make(chan line)
 		stopC := make(chan struct{})
-		csvC := make(chan reflect.Value)
+		width := len(names)
 
 		go func() {
-			type line struct {
-				vals []string
-				err  error
-			}
-			width := len(names)
-			nC := make(chan line)
-			stopf := make(chan struct{})
-			go func() {
-				for {
-					v, e := rdr.Read()
-					select {
-					case nC <- line{v, e}:
-					case <-stopf:
-						return
-					}
-				}
-			}()
-		loop:
+			defer close(nC)
 			for {
-				l := <-nC
-				x := reflect.Value{}
-				if l.err != nil {
-					if l.err == io.EOF {
-						break loop
-					}
-					x = reflect.ValueOf(l.err)
-				} else {
-					// TODO: parallel Convert over struct fields. if f[i].field % fibersCount == fiberNo ...
-					// TODO:  also use shered preallocated NA bits, and put clean (reduced) copy to struct
-					output := mlutil.Struct{names,make([]reflect.Value,width), mlutil.Bits{}}
-					for i,v := range l.vals {
-						na := false
-						if na, err = fm[i].Convert(v,&output.Columns[fm[i].field],fm[i].index,fm[i].width); err != nil {
-							break
-						}
-						if na { output.Na.Set(fm[i].field,true) }
-					}
-					x = reflect.ValueOf(output)
-					if err != nil {
-						x = reflect.ValueOf(err)
-					}
-				}
+				v, e := rdr.Read()
 				select {
-				case csvC <- x:
+				case nC <- line{v, e}:
 				case <-stopC:
-					break loop
+					cls.Close()
+					return
 				}
 			}
-			cls.Close()
-			close(stopf)
-			close(csvC)
 		}()
 
 		wc := lazy.WaitCounter{Value: 0}
@@ -154,16 +119,34 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 			if !wc.Wait(index) {
 				return reflect.ValueOf(false), nil
 			}
-			val, ok := <-csvC
+			l, ok := <-nC
+			wc.Inc()
+			x := reflect.Value{}
 			if ok {
-				err, _ = val.Interface().(error)
+				if err = l.err; err != nil {
+					if l.err == io.EOF {
+						ok = false
+						err = nil
+					}
+				} else {
+					output := mlutil.Struct{names,make([]reflect.Value,width), mlutil.Bits{}}
+					for i,v := range l.vals {
+						na := false
+						if na, err = fm[i].Convert(v,&output.Columns[fm[i].field],fm[i].index,fm[i].width); err != nil {
+							break
+						}
+						if na { output.Na.Set(fm[i].field,true) }
+					}
+					if err == nil {
+						x = reflect.ValueOf(output)
+					}
+				}
 			}
 			if !ok || err != nil {
 				wc.Stop()
 				return reflect.ValueOf(false), err
 			}
-			wc.Inc()
-			return val, nil
+			return x, nil
 		}
 	}
 }

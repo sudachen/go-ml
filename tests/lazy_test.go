@@ -78,7 +78,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 			y.F2 = x.F4 - 2
 			return
 		}).
-		//Parallel().
+		Parallel().
 		Map(struct {
 			Id             string
 			F1, F2, F3, F4 float64

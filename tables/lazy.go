@@ -46,9 +46,6 @@ func (t *Table) Lazy() Lazy {
 }
 
 func (zf Lazy) Map(f interface{}) Lazy {
-	if p, ok := f.(Predictor); ok {
-		return zf.Predict(p, false)
-	}
 	return func() lazy.Stream {
 		z := zf()
 		vf := reflect.ValueOf(f)
@@ -76,9 +73,6 @@ func (zf Lazy) Map(f interface{}) Lazy {
 }
 
 func (zf Lazy) Transform(f interface{}) Lazy {
-	if p, ok := f.(Predictor); ok {
-		return zf.Predict(p, true)
-	}
 	return func() lazy.Stream {
 		z := zf()
 		vf := reflect.ValueOf(f)
@@ -236,13 +230,6 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 			}
 			return
 		}
-	}
-}
-
-func (zf Lazy) Predict(pred Predictor, transform bool) Lazy {
-	z := zf()
-	return func() lazy.Stream {
-		return z
 	}
 }
 

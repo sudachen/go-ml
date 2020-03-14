@@ -19,7 +19,7 @@ func Test_Linear(t *testing.T) {
 	pred := xgb.Model{
 		Algorithm:    xgb.TreeBoost,
 		Function:     xgb.Softmax,
-		Iterations:   20,
+		Iterations:   10,
 		LearningRate: 0.1,
 		MaxDepth:     1,
 		Estimators:   5,
@@ -31,10 +31,10 @@ func Test_Linear(t *testing.T) {
 		Test:     "Test",
 		Features: []string{"Feature*"},
 	}).
-	LuckyFit()
+	LuckyFit(ml.Result("Pred"))
 
 	defer pred.Close()
 
-	w2 := iris.Data.Rand(42, 0.1).Transform(pred).Round(2).LuckyCollect()
+	w2 := iris.Data.Rand(33, 0.3).Batch(64).Transform(pred.MapFeatures).Flat().Round(2).LuckyCollect()
 	fmt.Println(w2)
 }

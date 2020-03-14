@@ -14,201 +14,176 @@ type Matrix struct {
 	LabelsWidth int // 0 means no labels defined
 }
 
-type Filler struct{
-	features []string
-	label  string
-	test   string
-	value  bool
-	table *Table
-}
-
-func (t *Table) For(features ...string) Filler {
-	return Filler{table: t, features: features}
-}
-
-func (f Filler) If(column string) (fx Filler) {
-	fx = f
-	f.test = column
-	f.value = true
+func (t *Table) Matrix(features []string) (m Matrix, err error) {
+	m,_,err = t.FillTrainAndTest(features, "", "", nil)
 	return
 }
 
-func (f Filler) IfNot(column string) (fx Filler) {
-	fx = f
-	fx.test = column
-	fx.value = false
-	return
+func (t *Table) FillFeatures(features []string, splitIfName string, splitIfValue interface{}) (m0,m1 Matrix, err error) {
+	return t.FillTrainAndTest(features, "", splitIfName, splitIfValue)
 }
 
-func (f Filler) Label(column string) (fx Filler) {
-	fx = f
-	fx.label = column
-	return
-}
-
-func (f Filler) filter() func(int)bool {
-	if f.test != "" {
-		x := f.table.Col(f.test)
-		if y, ok := x.Inspect().([]bool); ok {
-			return func(i int) bool { return y[i] == f.value }
-		} else if y, ok := x.Inspect().([]int); ok {
-			return func(i int) bool { return y[i] != 0 == f.value }
+func (t *Table) FillTrainAndTest(features []string, label string, testIfName string, testIfValue interface{}) (_,_ Matrix, err error) {
+	filter := func(int) int { return 0 }
+	if testIfName != "" {
+		tc := t.Col(testIfName)
+		if a, ok := tc.Inspect().([]bool); ok {
+			vt := testIfValue.(bool)
+			filter = func(i int) int {
+				if a[i] == vt {
+					return 1
+				} // test matrix
+				return 0
+			}
+		} else if a, ok := tc.Inspect().([]int); ok {
+			vt := testIfValue.(int)
+			filter = func(i int) int {
+				if a[i] == vt {
+					return 1
+				} // test matrix
+				return 0
+			}
+		} else {
+			filter = func(i int) int {
+				if tc.Index(i).Value == testIfValue {
+					return 1
+				}
+				return 0
+			}
 		}
-		return func(i int) bool { return x.Index(i).Int() != 0 == f.value }
 	}
-	return nil
-}
 
-func (f Filler) Matrix() (matrix Matrix, err error) {
-	filter := f.filter()
-	matrix, err = f.table.fillMatrix(filter,f.features...)
-	if err != nil { return }
-	if f.label != "" {
-		c := f.table.Col(f.label)
-		matrix.LabelsWidth = 1
-		if c.Type() == TensorType {
-			matrix.LabelsWidth = c.Inspect().([]Tensor)[0].Volume()
-		}
-		matrix.Labels = make([]float32,matrix.LabelsWidth*matrix.Length)
-		_, err = f.table.addToMatrix(filter, matrix, f.label, 0, true)
+	L := [2]int{}
+	for i := 0; i < t.raw.Length; i++ {
+		L[filter(i)]++
 	}
-	return
-}
 
-func (t *Table) addToMatrix(f func(int)bool, matrix Matrix, column string, i int, label ...bool) (width int, err error) {
-	width = i
-	where := fu.Ife(fu.Fnzb(label...),matrix.Labels,matrix.Features).([]float32)
-	c := t.Col(column)
-	switch c.Type() {
-	case mlutil.Float32:
-		x := c.Inspect().([]float32)
-		if f != nil {
-			for j, k := 0, 0; j < matrix.Length; j++ {
-				if f(j) {
-					where[k*matrix.Width+width] = x[j]
-					k++
-				}
-			}
-		} else {
-			for j := 0; j < matrix.Length; j++ {
-				where[j*matrix.Width+width] = x[j]
-			}
-		}
-		width++
-	case mlutil.Float64:
-		x := c.Inspect().([]float64)
-		if f != nil {
-			for j, k := 0, 0; j < matrix.Length; j++ {
-				if f(j) {
-					where[k*matrix.Width+width] = float32(x[j])
-					k++
-				}
-			}
-		} else {
-			for j := 0; j < matrix.Length; j++ {
-				matrix.Features[j*matrix.Width+width] = float32(x[j])
-			}
-		}
-		width++
-	case mlutil.Int:
-		x := c.Inspect().([]int)
-		if f != nil {
-			for j, k := 0, 0; j < matrix.Length; j++ {
-				if f(j) {
-					where[k*matrix.Width+width] = float32(x[j])
-					k++
-				}
-			}
-		} else {
-			for j := 0; j < matrix.Length; j++ {
-				matrix.Features[j*matrix.Width+width] = float32(x[j])
-			}
-		}
-		width++
-	case TensorType:
-		x := c.Inspect().([]Tensor)
-		vol := x[0].Volume()
-		m := 0
-		for j := 0; j < matrix.Length; j++ {
-			if x[j].Volume() != vol {
-				err = xerrors.Errorf("feature %v containes different volume tensors",column)
-			}
-			if f == nil || f(j) {
-				switch x[j].Type {
-				case TzeFloat32:
-					y := *(*[]float32)(x[j].Value)
-					copy(matrix.Features[m*matrix.Width+width:m*matrix.Width+width+vol],y)
-				case TzeFloat64:
-					y := *(*[]float64)(x[j].Value)
-					for k :=0; k < vol; k++ {
-						matrix.Features[m*matrix.Width+width+k] = float32(y[k])
-					}
-				case TzeByte:
-					y := *(*[]byte)(x[j].Value)
-					for k :=0; k < vol; k++ {
-						matrix.Features[m*matrix.Width+width+k] = float32(y[k])/256
-					}
-				case TzeFixed8:
-					y := *(*[]mlutil.Fixed8)(x[j].Value)
-					for k :=0; k < vol; k++ {
-						matrix.Features[m*matrix.Width+width+k] = y[k].Float32()
-					}
-				case TzeInt:
-					y := *(*[]int)(x[j].Value)
-					for k :=0; k < vol; k++ {
-						matrix.Features[m*matrix.Width+width+k] = float32(y[k])
-					}
-				default:
-					return width, xerrors.Errorf("unsupported tensor type %v", x[j].Type )
-				}
-				m++
-			}
-		}
-		width += vol
-	default:
-		x := c.ExtractAs(mlutil.Float32, true).([]float32)
-		if f != nil {
-			for j, k := 0, 0; j < matrix.Length; j++ {
-				if f(j) {
-					where[k*matrix.Width+width] = x[j]
-					k++
-				}
-			}
-		} else {
-			for j := 0; j < matrix.Length; j++ {
-				matrix.Features[j*matrix.Width+width] = x[j]
-			}
-		}
-		width++
-	}
-	return
-}
-
-func (t *Table) fillMatrix(f func(int)bool, features ...string) (matrix Matrix, err error) {
-
-	matrix.Length = t.FilteredLen(f)
-
+	width := 0
 	for _,n := range features {
 		c := t.Col(n)
 		if c.Type() == TensorType {
-			matrix.Width+=c.Inspect().([]Tensor)[0].Volume()
+			width+=c.Inspect().([]Tensor)[0].Volume()
 		} else {
-			matrix.Width++
+			width++
 		}
 	}
 
-	matrix.Features = make([]float32, matrix.Width*matrix.Length)
+	lwidth := 0
 
-	width := 0
-	for _, n := range features {
-		width, err = t.addToMatrix(f,matrix,n,width)
-		if err != nil { return}
+	if label != "" {
+		lc := t.Col(label)
+		lwidth = 1
+		if lc.Type() == TensorType {
+			lwidth = lc.Inspect().([]Tensor)[0].Volume()
+		}
 	}
 
+	mx := []Matrix{
+		{ make([]float32,L[0]*width), make([]float32,L[0]*lwidth), width, L[0], lwidth },
+		{ make([]float32,L[1]*width), make([]float32,L[0]*lwidth), width, L[1], lwidth },
+	}
+
+	wc := 0
+
+	for _,n := range features {
+		if wc, err = t.addToMatrix(filter, mx, t.Col(n), false, wc, width, t.raw.Length); err != nil {
+			return
+		}
+	}
+
+	if lwidth > 0 {
+		if _, err = t.addToMatrix(filter, mx, t.Col(label), true, 0, lwidth, t.raw.Length); err != nil {
+			return
+		}
+	}
+
+	return mx[0], mx[1], nil
+}
+
+func (t *Table) addToMatrix(f func(int)int, matrix []Matrix,c *Column, label bool, wc,width,length int) (_ int, err error) {
+	where := [2][]float32{
+		fu.Ife(label,matrix[0].Labels,matrix[0].Features).([]float32),
+		fu.Ife(label,matrix[1].Labels,matrix[1].Features).([]float32),
+	}
+	z := [2]int{}
+	switch c.Type() {
+	case mlutil.Float32:
+		x := c.Inspect().([]float32)
+		for j := 0; j < length; j++ {
+			jf := f(j)
+			where[jf][z[jf]*width+wc] = x[j]
+			z[jf]++
+		}
+		wc++
+	case mlutil.Float64:
+		x := c.Inspect().([]float64)
+		for j := 0; j < length; j++ {
+			jf := f(j)
+			where[jf][z[jf]*width+wc] = float32(x[j])
+			z[jf]++
+		}
+		wc++
+	case mlutil.Int:
+		x := c.Inspect().([]int)
+		for j := 0; j < length; j++ {
+			jf := f(j)
+			where[jf][z[jf]*width+wc] = float32(x[j])
+			z[jf]++
+		}
+		wc++
+	case TensorType:
+		x := c.Inspect().([]Tensor)
+		vol := x[0].Volume()
+		for j := 0; j < length; j++ {
+			if x[j].Volume() != vol {
+				err = xerrors.Errorf("tensors with different volumes found in one column")
+			}
+			jf := f(j)
+			m := z[jf]
+			t := where[jf]
+			switch x[j].Type {
+			case TzeFloat32:
+				y := *(*[]float32)(x[j].Value)
+				copy(t[m*width+wc:m*width+wc+vol],y)
+			case TzeFloat64:
+				y := *(*[]float64)(x[j].Value)
+				for k :=0; k < vol; k++ {
+					t[m*width+wc+k] = float32(y[k])
+				}
+			case TzeByte:
+				y := *(*[]byte)(x[j].Value)
+				for k :=0; k < vol; k++ {
+					t[m*width+wc+k] = float32(y[k])/256
+				}
+			case TzeFixed8:
+				y := *(*[]mlutil.Fixed8)(x[j].Value)
+				for k :=0; k < vol; k++ {
+					t[m*width+wc+k] = y[k].Float32()
+				}
+			case TzeInt:
+				y := *(*[]int)(x[j].Value)
+				for k :=0; k < vol; k++ {
+					t[m*width+wc+k] = float32(y[k])
+				}
+			default:
+				return width, xerrors.Errorf("unsupported tensor type %v", x[j].Type )
+			}
+			z[jf]++
+		}
+		wc += vol
+	default:
+		x := c.ExtractAs(mlutil.Float32, true).([]float32)
+		for j := 0; j < length; j++ {
+			jf := f(j)
+			where[jf][z[jf]*width+wc] = x[j]
+			z[jf]++
+		}
+		wc++
+	}
 	return
 }
 
-func FromMatrix(m Matrix, names ...string) *Table {
+func (m Matrix) AsTable(names ...string) *Table {
 	columns := make([]reflect.Value,m.Width)
 	na := make([]mlutil.Bits,m.Width)
 	for i := range columns {
@@ -220,3 +195,15 @@ func FromMatrix(m Matrix, names ...string) *Table {
 	}
 	return MakeTable(names,columns,na,m.Length)
 }
+
+func (m Matrix) AsColumn() *Column {
+	if m.Width == 1 {
+		return &Column{column:reflect.ValueOf(m.Features[0:m.Length])}
+	}
+	column := make([]*Tensor,m.Length)
+	for i := 0; i<m.Length; i++ {
+		column[i] = MakeFloat32Tensor(1,1, m.Width, m.Features[m.Width*i:m.Width*(i+1)])
+	}
+	return &Column{column:reflect.ValueOf(column)}
+}
+

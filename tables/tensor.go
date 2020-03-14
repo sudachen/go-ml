@@ -77,6 +77,20 @@ func (t *Tensor) Interface(index int) interface{} {
 	panic(xerrors.Errorf("tensor does not konw how to work with type %v",t.Type))
 }
 
+func MakeFloat32Tensor(channels,height,width int, values []float32) *Tensor {
+	//vol := channels*height*width
+	//v := make([]float32,vol)
+	//copy(v,values)
+	v := values
+	return &Tensor{
+		Channels: channels,
+		Height: height,
+		Width: width,
+		Value: unsafe.Pointer(&v),
+		Type: TzeFloat32,
+	}
+}
+
 var TensorType = reflect.TypeOf((*Tensor)(nil))
 
 type Xtensor struct{ T reflect.Type }

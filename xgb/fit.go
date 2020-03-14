@@ -9,11 +9,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func fit(e Model, dataset ml.Dataset, opts ...interface{}) (xgb xgbinstance, err error) {
+func fit(e Model, dataset ml.Dataset, opts ...ml.Fitparam) (xgb xgbinstance, err error) {
 	t,err := tables.Lazy(dataset.Source).Collect()
 	features := t.OnlyNames(dataset.Features...)
-	train, err := t.For(features...).IfNot(dataset.Test).Label(dataset.Label).Matrix()
-	test, err := t.For(features...).If(dataset.Test).Label(dataset.Label).Matrix()
+	train, test, err := t.FillTrainAndTest(features, dataset.Label, dataset.Test,true)
+	//train, err := t.FillTrain(features,dataset.Label)
 
 	if err != nil {
 		return
@@ -21,8 +21,7 @@ func fit(e Model, dataset ml.Dataset, opts ...interface{}) (xgb xgbinstance, err
 	m := matrix32(train)
 	defer m.Free()
 
-	predictName := fu.Fnzs(e.Result, "Prediction")
-	predicts := []string{predictName}
+	predicts := fu.Option(ml.Result(fu.Fnzs(e.Result, "Result")),opts).String()
 
 	if test.Length > 0 {
 		m2 := matrix32(test)
@@ -59,15 +58,9 @@ func fit(e Model, dataset ml.Dataset, opts ...interface{}) (xgb xgbinstance, err
 			panic(xerrors.Errorf("labels don't contain enough classes or label values is incorrect"))
 		}
 		capi.SetParam(xgb.handle, "num_class", fmt.Sprint(x+1))
-		if e.Function == Softprob {
-			xgb.predicts = []string{}
-			for i := 1; i <= x+1; i++ {
-				xgb.predicts = append(xgb.predicts, fmt.Sprintf("%v%v", predictName, i))
-			}
-		}
 	}
 
-	rounds := e.Iterations
+	rounds := int(fu.Option(ml.Iterations(e.Iterations),opts).Int())
 	for i := 0; i < rounds; i++ {
 		capi.Update(xgb.handle, i, m.handle)
 	}

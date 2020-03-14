@@ -12,8 +12,8 @@ func LibVersion() mlutil.VersionType {
 
 type xgbinstance struct {
 	handle   unsafe.Pointer
-	features []string
-	predicts []string
+	features []string // names of features
+	predicts string   // name predicted value
 }
 
 func (x xgbinstance) Close() (_ error) {
@@ -24,6 +24,14 @@ func (x xgbinstance) Close() (_ error) {
 
 func (x xgbinstance) BatchSize() (min, max int) {
 	return 1,64
+}
+
+func (x xgbinstance) Features() []string {
+	return x.features
+}
+
+func (x xgbinstance) Result() string {
+	return x.predicts
 }
 
 /*func (x XGBoost) Acquire() (base.xgbinstance,error) {
