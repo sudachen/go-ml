@@ -6,12 +6,22 @@ package tables
 import (
 	"fmt"
 	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-foo/lazy"
 	"github.com/sudachen/go-ml/mlutil"
 	"golang.org/x/xerrors"
 	"math/bits"
 	"reflect"
 )
 
+/*
+Table implements column based typed data structure
+Every values in a column has the same type.
+*/
+type Table struct{ raw Raw }
+
+/*
+Raw is the row presentation of a table, can be accessed by the Table.Raw method
+*/
 type Raw struct {
 	Names   []string
 	Columns []reflect.Value
@@ -20,12 +30,55 @@ type Raw struct {
 }
 
 /*
-Table implements column based typed data structure
-Every values in a column has the same type.
+IsLazy returns false, because Table is not lazy
+it's the tables.AnyData interface implementation
 */
-type Table struct {
-	raw  Raw
-	cols []*Column
+func (*Table) IsLazy() bool { return false }
+
+/*
+Table returns self, because Table is a table
+it's the tables.AnyData interface implementation
+*/
+func (t *Table) Table() *Table { return t }
+
+/*
+Collect returns self, because Table is a table
+it's the tables.AnyData interface implementation
+*/
+func (t *Table) Collect() (*Table, error) { return t, nil }
+
+/*
+Lazy returns new lazy stream sourcing from the table
+it's the tables.AnyData interface implementation
+*/
+func (t *Table) Lazy() Lazy {
+	return func() lazy.Stream {
+		flag := &lazy.AtomicFlag{Value: 1}
+		return func(index uint64) (v reflect.Value, err error) {
+			if index == lazy.STOP {
+				flag.Clear()
+			} else if flag.State() && index < uint64(t.raw.Length) {
+				return reflect.ValueOf(t.Index(int(index))), nil
+			}
+			return reflect.ValueOf(false), nil
+		}
+	}
+}
+
+/*
+Col returns Column object for the table' column selected by the name
+
+	t := tables.New([]struct{Name string; Age int; Rate float32}{{"Ivanov",42,1.2},{"Petrov",42,1.5}})
+	t.Col("Name").String(0) -> "Ivanov"
+	t.Col("Name").Len() -> 2
+*/
+func (t *Table) Col(c string) *Column {
+	for i, n := range t.raw.Names {
+		if n == c {
+			return &Column{t.raw.Columns[i], t.raw.Na[i]}
+		}
+	}
+	panic("there is not column with name " + c)
 }
 
 /*
@@ -42,11 +95,13 @@ func (t *Table) Len() int {
 	return t.raw.Length
 }
 
-func (t *Table) FilteredLen(f func(int)bool) int {
+func (t *Table) FilteredLen(f func(int) bool) int {
 	if f != nil {
 		L := 0
-		for i:=0; i<t.raw.Length; i++ {
-			if f(i) { L++ }
+		for i := 0; i < t.raw.Length; i++ {
+			if f(i) {
+				L++
+			}
 		}
 		return L
 	}
@@ -80,7 +135,6 @@ func MakeTable(names []string, columns []reflect.Value, na []mlutil.Bits, length
 			Columns: columns,
 			Na:      na,
 			Length:  length},
-		cols: nil,
 	}
 }
 
@@ -115,9 +169,50 @@ func New(o interface{}) *Table {
 	case reflect.Slice: // New([]struct{}{{}})
 		l := q.Len()
 		tp := q.Type().Elem()
-		if tp.Kind() != reflect.Struct {
+		if tp.Kind() != reflect.Struct && !(tp.Kind() == reflect.Ptr && tp.Elem().Kind() == reflect.Struct) {
 			panic("slice of structures allowed only")
 		}
+
+		if l > 0 && (tp == mlutil.StructType) {
+			// New([]mlutil.Struct{{}})
+			lrx := q.Interface().([]mlutil.Struct)
+			names := lrx[0].Names
+			columns := make([]reflect.Value, len(names))
+			for i := range columns {
+				columns[i] = reflect.MakeSlice(reflect.SliceOf(lrx[0].Columns[i].Type()), l, l)
+			}
+			na := make([]mlutil.Bits, len(names))
+			for i := range names {
+				for j := 0; j < l; j++ {
+					columns[i].Index(j).Set(lrx[j].Columns[i])
+					na[i].Set(j, lrx[j].Na.Bit(i))
+				}
+			}
+			return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+		}
+
+		if l > 0 && (tp.Kind() == reflect.Ptr && tp.Elem() == mlutil.StructType) {
+			// New([]*mlutil.Struct{{}})
+			lrx := q.Interface().([]*mlutil.Struct)
+			names := lrx[0].Names
+			columns := make([]reflect.Value, len(names))
+			for i := range columns {
+				columns[i] = reflect.MakeSlice(reflect.SliceOf(lrx[0].Columns[i].Type()), l, l)
+			}
+			na := make([]mlutil.Bits, len(names))
+			for i := range names {
+				for j := 0; j < l; j++ {
+					columns[i].Index(j).Set(lrx[j].Columns[i])
+					na[i].Set(j, lrx[j].Na.Bit(i))
+				}
+			}
+			return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+		}
+
+		if tp.Kind() == reflect.Ptr {
+			tp = tp.Elem()
+		}
+
 		nl := tp.NumField()
 		names := make([]string, 0, nl)
 		columns := make([]reflect.Value, 0, nl)
@@ -127,7 +222,11 @@ func New(o interface{}) *Table {
 			col := reflect.MakeSlice(reflect.SliceOf(fv.Type), l, l)
 			columns = append(columns, col)
 			for j := 0; j < l; j++ {
-				col.Index(j).Set(q.Index(j).Field(i))
+				x := q.Index(j)
+				if x.Kind() == reflect.Ptr {
+					x = x.Elem()
+				}
+				col.Index(j).Set(x.Field(i))
 			}
 		}
 
@@ -291,7 +390,6 @@ func (t *Table) OnlyNames(column ...string) []string {
 	}
 	return names
 }
-
 
 /*
 Append adds data to table
@@ -506,34 +604,42 @@ func (t *Table) FillNa(r interface{}) *Table {
 	return MakeTable(t.raw.Names, columns, na, t.raw.Length)
 }
 
-func (t *Table) Struct(row int) mlutil.Struct {
+func (t *Table) Index(r int) mlutil.Struct {
 	names := t.raw.Names
-	columns := make([]reflect.Value,len(names))
+	columns := make([]reflect.Value, len(names))
 	na := mlutil.Bits{}
-	for i,c := range t.raw.Columns {
-		columns[i] = c.Index(row)
-		na.Set(i,t.raw.Na[i].Bit(row))
+	for i, c := range t.raw.Columns {
+		columns[i] = c.Index(r)
+		na.Set(i, t.raw.Na[i].Bit(r))
 	}
-	return mlutil.Struct{ names, columns, na}
+	return mlutil.Struct{names, columns, na}
+}
+
+func (t *Table) Last() mlutil.Struct {
+	return t.Index(t.Len() - 1)
 }
 
 func (t *Table) With(column *Column, name string) *Table {
 	if column.Len() != t.raw.Length {
 		panic(xerrors.Errorf("column length is not match table length"))
 	}
-	if fu.IndexOf(name,t.raw.Names) >= 0 {
-		panic(xerrors.Errorf("column with name `%v` alreday exists in the table",name))
+	if fu.IndexOf(name, t.raw.Names) >= 0 {
+		panic(xerrors.Errorf("column with name `%v` alreday exists in the table", name))
 	}
-	names := make([]string,len(t.raw.Names),len(t.raw.Names)+1)
-	columns := make([]reflect.Value,len(t.raw.Names),len(t.raw.Names)+1)
-	na := make([]mlutil.Bits,len(t.raw.Names),len(t.raw.Names)+1)
-	copy(names,t.raw.Names)
-	copy(columns,t.raw.Columns)
-	copy(na,t.raw.Na)
-	names = append(names,name)
-	columns = append(columns,column.column)
-	na = append(na,column.na)
-	return MakeTable(names,columns,na,t.raw.Length)
+	names := make([]string, len(t.raw.Names), len(t.raw.Names)+1)
+	columns := make([]reflect.Value, len(t.raw.Names), len(t.raw.Names)+1)
+	na := make([]mlutil.Bits, len(t.raw.Names), len(t.raw.Names)+1)
+	copy(names, t.raw.Names)
+	copy(columns, t.raw.Columns)
+	copy(na, t.raw.Na)
+	names = append(names, name)
+	columns = append(columns, column.column)
+	na = append(na, column.na)
+	return MakeTable(names, columns, na, t.raw.Length)
+}
+
+func (t *Table) Round(prec int /*, columns ...string*/) *Table {
+	return t.Lazy().Round(prec).LuckyCollect()
 }
 
 /*
@@ -558,7 +664,7 @@ func Shape(x interface{}, names ...string) *Table {
 	return MakeTable(names, columns, na, length)
 }
 
-func Shape32(v []float32, names ...string) *Table {
+func Shape32f(v []float32, names ...string) *Table {
 	width := len(names)
 	length := len(v) / width
 	columns := make([]reflect.Value, width)

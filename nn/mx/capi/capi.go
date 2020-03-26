@@ -58,13 +58,13 @@ func init() {
 	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
 		so = dl.Load(
 			dl.Custom("/opt/mxnet/lib/libmxnet.so"),
-			dl.Cached("dl/go-ml/libmxnet.so"),
+			dl.Cached("dl/go-model/libmxnet.so"),
 			dl.System("libmxnet.so"),
 			dl.LzmaExternal("https://github.com/sudachen/mxnet/releases/download/1.5.0-mkldnn-static/libmxnet_cpu_lin64.lzma"),
 			dlVerbose)
 	} else if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
 		so = dl.Load(
-			dl.Cached("dl/go-ml/mxnet15.dll"),
+			dl.Cached("dl/go-model/mxnet15.dll"),
 			dl.System("mxnet15.dll"),
 			dl.LzmaExternal("https://github.com/sudachen/mxnet/releases/download/1.5.0-mkldnn-static/libmxnet_cpu_win64.lzma"),
 			dlVerbose)

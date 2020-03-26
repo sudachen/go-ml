@@ -51,6 +51,8 @@ type Graph struct {
 	alias    map[*Symbol]*Symbol
 	outputs  map[string]*Symbol
 	refs     map[string]capi.SymbolHandle
+
+	symId int
 }
 
 func (g *Graph) symRelease() {
@@ -250,7 +252,7 @@ func Compose(
 func (g *Graph) subcompose(s *Symbol) []capi.SymbolHandle {
 	var a []capi.SymbolHandle
 
-	for _, v := range s.args {
+	for _, v := range s.Args {
 		h := g.compose(v)
 		if h != nil {
 			a = append(a, h)
@@ -268,58 +270,58 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 		return h
 	}
 
-	switch s.op {
+	switch s.Op {
 	case OpInput_:
 		return g.vars["_input"]
 	case OpScalar_:
 		return nil
 	case OpRef_:
-		if s, ok := g.refs[s.name]; ok {
+		if s, ok := g.refs[s.Name]; ok {
 			return s
 		}
-		panic(fmt.Sprintf("symbol %s does not exist", s.name))
+		panic(fmt.Sprintf("symbol %s does not exist", s.Name))
 	case OpVar_, OpNogVar_:
-		n := s.name
+		n := s.Name
 		if v, ok := g.vars[n]; ok {
 			return v
 		}
 		h := capi.CreateVariable(n)
 		g.vars[n] = h
 		g.refs[n] = h
-		if s.init != nil {
-			g.Initializers[n] = s.init
+		if s.Init != nil {
+			g.Initializers[n] = s.Init
 		}
-		if s.op != OpNogVar_ && n[0] != '_' {
+		if s.Op != OpNogVar_ && n[0] != '_' {
 			g.Autograd[n] = true
 		}
-		if s.dim.Len > 0 {
-			g.Shapes[n] = s.dim.Like(g.Input.Dim())
+		if s.Dim.Len > 0 {
+			g.Shapes[n] = s.Dim.Like(g.Input.Dim())
 		}
 		return h
 	case OpOutput_:
-		n := "*" + s.name
+		n := "*" + s.Name
 		if _, ok := g.outputs[n]; !ok {
-			g.outputs[n] = BlockGrad(s.args[0]).SetName(n)
+			g.outputs[n] = BlockGrad(s.Args[0]).SetName(n)
 		}
-		return g.compose(s.args[0])
+		return g.compose(s.Args[0])
 	case OpBound_:
-		h := g.compose(s.args[0])
-		for _, v := range s.args[1:] {
+		h := g.compose(s.Args[0])
+		for _, v := range s.Args[1:] {
 			_ = g.compose(v)
 		}
 		return h
 	case OpDepend_:
-		for _, v := range s.args[1:] {
+		for _, v := range s.Args[1:] {
 			_ = g.compose(v)
 		}
-		return g.compose(s.args[0])
+		return g.compose(s.Args[0])
 	case capi.OpZeros, capi.OpOnes, capi.OpRandomUniform, capi.OpReshape:
 		s1 := *s
-		s1.attr = make(map[capi.MxnetKey]string)
-		for key, value := range s.attr {
-			s1.attr[key] = value
+		s1.Attr = make(map[capi.MxnetKey]string)
+		for key, value := range s.Attr {
+			s1.Attr[key] = value
 		}
-		s1.attr[capi.KeyShape] = s.dim.Like(g.Input.Dim()).String()
+		s1.Attr[capi.KeyShape] = s.Dim.Like(g.Input.Dim()).String()
 		a := &s1
 		g.alias[s] = a
 		s = a
@@ -329,24 +331,24 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 
 	a := g.subcompose(s)
 
-	if s.op == OpGroup_ {
+	if s.Op == OpGroup_ {
 		op = capi.GroupSymbols(a)
 		g.symbols[s] = op
 	} else {
 
-		op = capi.NewSymbol(s.op, s.attr)
+		op = capi.NewSymbol(s.Op, s.Attr)
 		g.symbols[s] = op
-		name := s.name
+		name := s.Name
 		if len(name) < 3 {
-			name = fmt.Sprintf("%s@%s%02d", s.op.Value(), "sym", NextSymbolId())
+			name = fmt.Sprintf("%s@%s%02d", s.Op.Value(), "sym", g.NextSymbolId())
 		}
 		capi.ComposeSymbol(op, name, a...)
 
-		if s.name != "" {
-			g.refs[s.name] = op
+		if s.Name != "" {
+			g.refs[s.Name] = op
 		}
 
-		if s.output {
+		if s.Output {
 			n := "*" + name
 			if _, ok := g.outputs[n]; !ok {
 				g.outputs[n] = BlockGrad(s).SetName(n)
@@ -355,6 +357,11 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 	}
 
 	return op
+}
+
+func (g *Graph) NextSymbolId() int {
+	g.symId++
+	return g.symId
 }
 
 func (g *Graph) InitParam(name string) {
@@ -372,8 +379,11 @@ func (g *Graph) InitParam(name string) {
 	}
 }
 
-func (g *Graph) Initialize(inite func(*NDArray, string)) {
+func (g *Graph) Initialize(seed int, inite func(*NDArray, string)) {
 	keys := fu.SortedKeysOf(g.Params).([]string)
+	randomMu.Lock()
+	defer randomMu.Unlock()
+	g.Ctx.RandomSeed(seed)
 	for _, name := range keys {
 		if inite != nil {
 			param := g.Params[name]
@@ -387,7 +397,7 @@ func (g *Graph) Initialize(inite func(*NDArray, string)) {
 
 func (g *Graph) Forward(train bool) {
 	if !g.Initialized {
-		g.Initialize(nil)
+		panic("network is not intialized")
 	}
 	capi.Forward(g.Exec, train)
 }

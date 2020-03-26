@@ -58,7 +58,7 @@ type Activation struct {
 func (ly *Activation) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("Activation%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("Activation%02d", NextSymbolId())
 	} else {
 		ns += "$A"
 	}

@@ -28,7 +28,7 @@ func (ly *FullyConnected) Combine(in *mx.Symbol) *mx.Symbol {
 	var bias *mx.Symbol
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("FullyConnected%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("FullyConnected%02d", NextSymbolId())
 	}
 	weight := mx.Var(ns+"_weight", ly.WeightInit)
 	if !ly.NoBias {

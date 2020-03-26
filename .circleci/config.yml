@@ -2,7 +2,7 @@ version: 2
 jobs:
   test-all:
     docker:
-      - image: sudachen/go-ml-ci
+      - image: sudachen/go-model-ci
 
     parallelism: 1
 

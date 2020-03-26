@@ -3,7 +3,11 @@ package mx
 import (
 	"github.com/sudachen/go-ml/nn/mx/capi"
 	"math"
+	"sync"
 )
+
+// randomMu is a shared mutex to synchronize initializations
+var randomMu = sync.Mutex{}
 
 func (a *NDArray) Uniform(low float32, high float32) *NDArray {
 	capi.ImperativeInvokeInplace1(

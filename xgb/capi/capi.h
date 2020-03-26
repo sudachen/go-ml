@@ -7,7 +7,6 @@ typedef uint64_t bst_ulong;
 
 void XGBoostVersion(int* major, int* minor, int* patch);
 const char *XGBGetLastError(void);
-
 int XGDMatrixCreateFromFile(const char *fname,int silent,DMatrixHandle *out);
 int XGDMatrixCreateFromDT(void** data,
     const char ** feature_stypes,
@@ -24,16 +23,15 @@ int XGDMatrixFree(DMatrixHandle handle);
 int XGDMatrixSaveBinary(DMatrixHandle handle,const char *fname, int silent);
 int XGDMatrixNumRow(DMatrixHandle handle,bst_ulong *out);
 int XGDMatrixNumCol(DMatrixHandle handle,bst_ulong *out);
-
 int XGBoosterCreate(const DMatrixHandle dmats[],bst_ulong len,BoosterHandle *out);
 int XGBoosterFree(BoosterHandle handle);
 int XGBoosterSetParam(BoosterHandle handle,const char *name,const char *value);
 int XGBoosterLoadModel(BoosterHandle handle,const char *fname);
 int XGBoosterSaveModel(BoosterHandle handle,const char *fname);
 int XGBoosterLoadModelFromBuffer(BoosterHandle handle,const void *buf,bst_ulong len);
-int XGBoosterGetModelRaw(BoosterHandle handle, bst_ulong *out_len,const char **out_dptr);
-int XGBoosterSaveJsonConfig(BoosterHandle handle, bst_ulong *out_len,char const **out_str);
+int XGBoosterGetModelRaw(BoosterHandle handle, bst_ulong *out_len, /* const char* */ void *out_dptr);
 int XGBoosterLoadJsonConfig(BoosterHandle handle,char const *json_parameters);
+int XGBoosterSaveJsonConfig(BoosterHandle handle, bst_ulong *out_len,/* char const* */ void *out_str);
 int XGBoosterGetAttr(BoosterHandle handle,const char* key,const char** out,int *success);
 int XGBoosterSetAttr(BoosterHandle handle,const char* key,const char* value);
 int XGBoosterGetAttrNames(BoosterHandle handle,bst_ulong* out_len,const char*** out);
@@ -72,6 +70,18 @@ int XGDMatrixGetUIntInfo(const DMatrixHandle handle,
     const char *field,
     bst_ulong* out_len,
     const unsigned **out_dptr);
+int XGBoosterSerializeToBuffer(BoosterHandle handle,
+    bst_ulong *out_len,
+    const char **out_dptr);
+int XGBoosterUnserializeFromBuffer(BoosterHandle handle,
+    const void *buf,
+    bst_ulong len);
+int XGBoosterDumpModelEx(BoosterHandle handle,
+    const char *fmap,
+    int with_stats,
+    const char *format,
+    bst_ulong *out_len,
+    /*const char **/ void *out_dump_array);
 
 #define DEFINE_JUMPER(x) \
         void *_godl_##x = (void*)0; \
@@ -106,3 +116,4 @@ DEFINE_JUMPER(XGDMatrixSetFloatInfo);
 DEFINE_JUMPER(XGDMatrixSetUIntInfo);
 DEFINE_JUMPER(XGDMatrixGetFloatInfo);
 DEFINE_JUMPER(XGDMatrixGetUIntInfo);
+DEFINE_JUMPER(XGBoosterDumpModelEx);

@@ -150,27 +150,15 @@ func Test_Append0(t *testing.T) {
 	assert.Assert(t, q.Append([]struct{ Tall int }{{0}}).Len() == q.Len()+1)
 }
 
-func Test_Collect(t *testing.T) {
-	q := tables.New(trList)
-	assertTrData(t, q)
-	r := q.Collect(TR{}).([]TR)
-	assert.DeepEqual(t, trList, r)
-	r = q.Collect(&TR{}).([]TR)
-	assert.DeepEqual(t, trList, r)
-	assert.Assert(t, cmp.Panics(func() {
-		r = q.Collect(false).([]TR)
-	}))
-}
-
 func Test_ColumnString(t *testing.T) {
 	q := PrepareTable(t)
 
-	assert.DeepEqual(t, q.Col("Name").String(0), "Ivanov")
-	assert.DeepEqual(t, q.Col("Name").String(1), "Petrov")
-	assert.DeepEqual(t, q.Col("Age").String(0), "32")
-	assert.DeepEqual(t, q.Col("Age").String(1), "44")
-	assert.DeepEqual(t, q.Col("Rate").String(0), "1.2")
-	assert.DeepEqual(t, q.Col("Rate").String(1), "1.5")
+	assert.DeepEqual(t, q.Col("Name").Text(0), "Ivanov")
+	assert.DeepEqual(t, q.Col("Name").Text(1), "Petrov")
+	assert.DeepEqual(t, q.Col("Age").Text(0), "32")
+	assert.DeepEqual(t, q.Col("Age").Text(1), "44")
+	assert.DeepEqual(t, q.Col("Rate").Text(0), "1.2")
+	assert.DeepEqual(t, q.Col("Rate").Text(1), "1.5")
 
 	assert.Assert(t, cmp.Panics(func() { q.Col("name") }))
 }
@@ -472,7 +460,7 @@ func Test_NA2(t *testing.T) {
 	assert.Assert(t, !q5.Col("Name").Na(2))
 	assert.Assert(t, !q5.Col("Age").Na(2))
 	assert.Assert(t, q5.Col("Age").Int(0) == -1)
-	assert.Assert(t, q5.Col("Name").String(1) == "Empty")
+	assert.Assert(t, q5.Col("Name").Text(1) == "Empty")
 
 	assert.Assert(t, q6.DropNa().Len() == 3)
 	assert.Assert(t, !q6.Col("Name").Na(0))
@@ -482,10 +470,10 @@ func Test_NA2(t *testing.T) {
 	assert.Assert(t, !q6.Col("Name").Na(2))
 	assert.Assert(t, !q6.Col("Age").Na(2))
 	assert.Assert(t, q6.Col("Age").Int(0) == -1)
-	assert.Assert(t, q6.Col("Name").String(1) == "Empty")
+	assert.Assert(t, q6.Col("Name").Text(1) == "Empty")
 
 	assert.Assert(t, q7.DropNa().Len() == 1)
 	assert.Assert(t, q8.DropNa().Len() == 3)
 	assert.Assert(t, q8.Col("Age").Int(0) == -1)
-	assert.Assert(t, q8.Col("Name").String(1) == "0")
+	assert.Assert(t, q8.Col("Name").Text(1) == "0")
 }

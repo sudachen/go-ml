@@ -8,20 +8,20 @@ import (
 )
 
 type formatter func(value reflect.Value, na bool) string
-type converter func(value string, field *reflect.Value, index,width int) (bool,error)
+type converter func(value string, field *reflect.Value, index, width int) (bool, error)
 type mapper struct {
 	CsvCol, TableCol string
 	valueType        reflect.Type
 	convert          converter
 	format           formatter
 	group            bool
-	field,index      int
-	width 			 int
+	field, index     int
+	width            int
 	name             string
 }
 
 func Mapper(ccol, tcol string, t reflect.Type, conv converter, form formatter) mapper {
-	return mapper{ccol,tcol, t, conv, form, false, 0 ,0, 0, "" }
+	return mapper{ccol, tcol, t, conv, form, false, 0, 0, 0, ""}
 }
 
 func (m mapper) Group() bool {
@@ -61,7 +61,7 @@ func mapFields(header []string, opts []interface{}) (fm []mapper, names []string
 					if !mask.Bit(i) && like(n) {
 						v.name = v.TableCol
 						fm[i] = v
-						mask.Set(i,true)
+						mask.Set(i, true)
 						exists = true
 						v.index++
 					}
@@ -83,13 +83,15 @@ func mapFields(header []string, opts []interface{}) (fm []mapper, names []string
 			}
 		}
 	}
-	width := make([]int,len(header))
+	width := make([]int, len(header))
 	for i := range fm {
-		if fm[i].name == "" { fm[i].name = header[i] }
-		j := fu.IndexOf(fm[i].name,names)
+		if fm[i].name == "" {
+			fm[i].name = header[i]
+		}
+		j := fu.IndexOf(fm[i].name, names)
 		if j < 0 {
 			j = len(names)
-			names = append(names,fm[i].name)
+			names = append(names, fm[i].name)
 		}
 		fm[i].field = j
 		width[j]++

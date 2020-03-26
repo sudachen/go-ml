@@ -8,7 +8,6 @@ import (
 	"github.com/sudachen/go-ml/tables"
 	"golang.org/x/xerrors"
 	"io"
-	"os"
 	"reflect"
 )
 
@@ -19,7 +18,7 @@ const initialCapacity = 101
 /*
 	// detects compression automatically
     // can be gzip, bzip2, xz/lzma2
-	csv.Read("file.csv.xz",
+	csv.Read(fu.Compressed("file.csv.xz"),
 				csv.Float64("feature_1").As("Feature1"),
 				csv.Time("feature_2").Like(time.RFC3339Nano).As("Feature2"))
 
@@ -60,7 +59,7 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 	} else if e, ok := source.(string); ok {
 		return lazyread(fu.File(e), opts...)
 	} else if rd, ok := source.(io.Reader); ok {
-		return lazyread(fu.WrapClose(rd, nil), opts...)
+		return lazyread(fu.Reader(rd, nil), opts...)
 	}
 	return tables.SourceError(xerrors.Errorf("csv reader does not know source type %v", reflect.TypeOf(source).String()))
 }
@@ -71,9 +70,9 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 		if err != nil {
 			return lazy.Error(err)
 		}
-		dq := fu.Decompress(rd)
-		cls := fu.CloserChain{dq, rd}
-		rdr := csv.NewReader(dq)
+		//dq := fu.Decompress(rd)
+		cls := io.Closer(rd) //fu.CloserChain{dq, rd}
+		rdr := csv.NewReader(rd)
 		rdr.Comma = fu.RuneOption(Comma(rdr.Comma), opts)
 		vals, err := rdr.Read()
 		if err != nil {
@@ -129,13 +128,15 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 						err = nil
 					}
 				} else {
-					output := mlutil.Struct{names,make([]reflect.Value,width), mlutil.Bits{}}
-					for i,v := range l.vals {
+					output := mlutil.Struct{names, make([]reflect.Value, width), mlutil.Bits{}}
+					for i, v := range l.vals {
 						na := false
-						if na, err = fm[i].Convert(v,&output.Columns[fm[i].field],fm[i].index,fm[i].width); err != nil {
+						if na, err = fm[i].Convert(v, &output.Columns[fm[i].field], fm[i].index, fm[i].width); err != nil {
 							break
 						}
-						if na { output.Na.Set(fm[i].field,true) }
+						if na {
+							output.Na.Set(fm[i].field, true)
+						}
 					}
 					if err == nil {
 						x = reflect.ValueOf(output)
@@ -167,28 +168,14 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				csv.Comma('|'),
 				csv.Column("feature_1").As("Feature1"))
 */
-func Write(t *tables.Table, dest interface{}, opts ...interface{}) (err error) {
+func Write(t *tables.Table, dest fu.Output, opts ...interface{}) (err error) {
 	return t.Lazy().Drain(Sink(dest, opts...))
 }
 
-func Sink(dest interface{}, opts ...interface{}) tables.Sink {
+func Sink(dest fu.Output, opts ...interface{}) tables.Sink {
 	var err error
-	f := io.Writer(nil)
-	cls := io.Closer(nil)
-	if e, ok := dest.(fu.Output); ok {
-		if f, err = e.Create(); err == nil {
-			cls = f.(io.Closer)
-		}
-	} else if e, ok := dest.(string); ok {
-		if f, err = os.Create(e); err == nil {
-			cls = f.(io.Closer)
-		}
-	} else if wr, ok := dest.(io.Writer); ok {
-		f = wr
-	} else {
-		return tables.SinkError(xerrors.Errorf("csv writer does not know dest type %v", reflect.TypeOf(dest).String()))
-	}
-	if err != nil {
+	f := fu.Whole(nil)
+	if f, err = dest.Create(); err != nil {
 		return tables.SinkError(err)
 	}
 	cwr := csv.NewWriter(f)
@@ -198,11 +185,10 @@ func Sink(dest interface{}, opts ...interface{}) tables.Sink {
 	return func(v reflect.Value) (err error) {
 		if v.Kind() == reflect.Bool {
 			cwr.Flush()
-			if cls != nil {
-				err = cls.Close()
+			if v.Bool() {
+				err = f.Commit()
 			}
-			if !v.Bool() { // shit happens, remove dest
-			}
+			f.End()
 			return
 		}
 		lr := v.Interface().(mlutil.Struct)

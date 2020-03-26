@@ -12,6 +12,7 @@ func (x xgbinstance) setparam(par capiparam) {
 }
 
 type booster string
+
 func (b booster) pair() (string, string) { return "booster", string(b) }
 
 const TreeBoost = booster("gbtree")
@@ -19,6 +20,7 @@ const LinearBoost = booster("gblinear")
 const DartBoost = booster("dart")
 
 type objective string
+
 func (o objective) pair() (string, string) { return "objective", string(o) }
 
 const Linear = objective("reg:linear")
@@ -45,4 +47,5 @@ const Softmax = objective("multi:softmax")
 const Softprob = objective("multi:softprob")
 
 type Param struct{ Name, Value string }
+
 func (sp Param) pair() (string, string) { return sp.Name, sp.Value }

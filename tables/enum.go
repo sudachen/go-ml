@@ -19,7 +19,7 @@ type Enum struct {
 	Value int
 }
 
-// String return enum string representation
+// Text return enum string representation
 func (e Enum) String() string {
 	return e.Text
 }
@@ -82,7 +82,7 @@ func (ce Enumerator) enumerate(v string) (e int, ok bool) {
 func (ce Enumerator) Type() reflect.Type {
 	return enumType // it's the Enum meta-column
 }
-func (ce Enumerator) Convert(v string, value *reflect.Value, _,_ int)(na bool, err error) {
+func (ce Enumerator) Convert(v string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if v == "" {
 		*value = reflect.ValueOf("")
 		return true, nil
@@ -113,7 +113,7 @@ func (ce IntegerEnumerator) Type() reflect.Type {
 	return mlutil.Int
 }
 
-func (ce IntegerEnumerator) Convert(v string, value *reflect.Value, _,_ int)(bool, error) {
+func (ce IntegerEnumerator) Convert(v string, value *reflect.Value, _, _ int) (bool, error) {
 	if v == "" {
 		*value = reflect.ValueOf("")
 		return true, nil
@@ -147,9 +147,9 @@ func (ce Float32Enumerator) Type() reflect.Type {
 	return mlutil.Float32
 }
 
-func (ce Float32Enumerator) Convert(v string, value *reflect.Value, _,_ int)(na bool, err error) {
+func (ce Float32Enumerator) Convert(v string, value *reflect.Value, _, _ int) (na bool, err error) {
 	val := reflect.Value{}
-	if na, err = ce.IntegerEnumerator.Convert(v,&val,0,0); err == nil {
+	if na, err = ce.IntegerEnumerator.Convert(v, &val, 0, 0); err == nil {
 		*value = reflect.ValueOf(float32(val.Int()))
 	}
 	return
@@ -161,7 +161,7 @@ func (ce TextEnumerator) Type() reflect.Type {
 	return mlutil.String
 }
 
-func (ce TextEnumerator) Convert(v string, value *reflect.Value, _,_ int) (bool, error) {
+func (ce TextEnumerator) Convert(v string, value *reflect.Value, _, _ int) (bool, error) {
 	if v == "" {
 		*value = reflect.ValueOf("")
 		return true, nil

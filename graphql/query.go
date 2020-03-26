@@ -55,6 +55,8 @@ func DoQuery(url, query string, args Args) (r Result, err error) {
 
 func IfQuery(url, query string, args Args, f func(q Result) interface{}) interface{} {
 	q, err := DoQuery(url, query, args)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return f(q)
 }

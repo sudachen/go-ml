@@ -10,6 +10,7 @@ type Context int
 const (
 	NullContext Context = 0
 	CPU         Context = 1
+	GPU         Context = 2
 	GPU0        Context = 2
 	GPU1        Context = 1002
 )
@@ -47,4 +48,16 @@ func (c Context) String() string {
 
 func (c Context) RandomSeed(seed int) {
 	capi.ContextRandomSeed(seed, c.DevType(), c.DevNo())
+}
+
+func (c Context) Upgrade() Context {
+	if c == NullContext {
+		return CPU
+	}
+	if c.IsGPU() {
+		if c.DevNo() >= capi.GpuCount {
+			return GPU0
+		}
+	}
+	return c
 }

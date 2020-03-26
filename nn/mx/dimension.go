@@ -2,8 +2,7 @@ package mx
 
 import (
 	"fmt"
-	"golang.org/x/xerrors"
-	"gopkg.in/yaml.v3"
+	"github.com/sudachen/go-foo/fu"
 	"strconv"
 	"strings"
 )
@@ -21,15 +20,15 @@ const MaxDimensionCount = 4
 
 // Array Dimension
 type Dimension struct {
-	Shape [MaxDimensionCount]int
-	Len   int
+	Shape [MaxDimensionCount]int `yaml:"shape,flow"`
+	Len   int                    `yaml:"len"`
 }
 
 func DimensionFromString(s string) (Dimension, error) {
 	r := Dimension{}
 	if len(s) > 0 && s != "" {
 		if s[0] != '(' || s[len(s)-1] != ')' {
-			return Dimension{}, xerrors.Errorf("invalid dimension string")
+			return Dimension{}, fu.Errorf("invalid dimension string")
 		}
 		s := s[1 : len(s)-1]
 		if len(s) > 0 && s != "" {
@@ -37,7 +36,7 @@ func DimensionFromString(s string) (Dimension, error) {
 			for i, n := range d {
 				v, err := strconv.ParseInt(n, 10, 32)
 				if err != nil {
-					return Dimension{}, xerrors.Errorf("bad dimansion value; %w", err)
+					return Dimension{}, fu.Errorf("bad dimansion value; %w", err)
 				}
 				r.Shape[i] = int(v)
 				r.Len = i + 1
@@ -47,7 +46,7 @@ func DimensionFromString(s string) (Dimension, error) {
 	return r, nil
 }
 
-func (d *Dimension) UnmarshalYAML(value *yaml.Node) error {
+/*func (d *Dimension) UnmarshalYAML(value *yaml.Node) error {
 	if value.Tag != "!!str" {
 		return fmt.Errorf("can't decode coin")
 	}
@@ -63,7 +62,7 @@ func (d *Dimension) UnmarshalYAML(value *yaml.Node) error {
 
 func (d Dimension) MarshalYAML() (interface{}, error) {
 	return d.String(), nil
-}
+}*/
 
 func (dim Dimension) Skip(n int) Dimension {
 	if dim.Len <= n {

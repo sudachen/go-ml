@@ -11,7 +11,7 @@ type FIX8S struct {
 	f32 float32
 	f8  mlutil.Fixed8
 	s8  string
-	s8x  string
+	s8x string
 	err bool
 }
 
@@ -32,12 +32,12 @@ var fix8s = []FIX8S{
 }
 
 func (x FIX8S) String(v mlutil.Fixed8) string {
-	return fmt.Sprintf("v: %v, f32: %v, f8: %v, s8: %v, s8x: %v", v,x.f32,x.f8,x.s8,x.s8x)
+	return fmt.Sprintf("v: %v, f32: %v, f8: %v, s8: %v, s8x: %v", v, x.f32, x.f8, x.s8, x.s8x)
 }
 
 func Test_Fixed8strings(t *testing.T) {
 	for _, x := range fix8s {
-		v ,err := mlutil.Fast8f(x.s8)
+		v, err := mlutil.Fast8f(x.s8)
 		if err != nil {
 			assert.Assert(t, x.err)
 		} else {

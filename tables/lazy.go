@@ -10,6 +10,10 @@ import (
 type Lazy lazy.Source
 type Sink lazy.Sink
 
+func (Lazy) IsLazy() bool     { return true }
+func (zf Lazy) Table() *Table { return zf.LuckyCollect() }
+func (zf Lazy) Lazy() Lazy    { return zf }
+
 func SourceError(err error) Lazy {
 	return func() lazy.Stream {
 		return func(_ uint64) (reflect.Value, error) {
@@ -21,27 +25,6 @@ func SourceError(err error) Lazy {
 func SinkError(err error) Sink {
 	return func(_ reflect.Value) error {
 		return err
-	}
-}
-
-func (t *Table) Lazy() Lazy {
-	return func() lazy.Stream {
-		flag := &lazy.AtomicFlag{Value: 1}
-		return func(index uint64) (v reflect.Value, err error) {
-			if index == lazy.STOP {
-				flag.Clear()
-			} else if flag.State() && index < uint64(t.raw.Length) {
-				lr := mlutil.Struct{
-					Names:   t.raw.Names,
-					Columns: make([]reflect.Value, len(t.raw.Names)),
-				}
-				for i := range t.raw.Columns {
-					lr.Columns[i] = t.raw.Columns[i].Index(int(index))
-				}
-				return reflect.ValueOf(lr), nil
-			}
-			return reflect.ValueOf(false), nil
-		}
 	}
 }
 
@@ -118,23 +101,23 @@ func (zf Lazy) Filter(f interface{}) Lazy {
 	}
 }
 
-func (z Lazy) First(n int) Lazy {
-	return Lazy(lazy.Source(z).First(n))
+func (zf Lazy) First(n int) Lazy {
+	return Lazy(lazy.Source(zf).First(n))
 }
 
-func (z Lazy) Parallel(concurrency ...int) Lazy {
-	return Lazy(lazy.Source(z).Parallel(concurrency...))
+func (zf Lazy) Parallel(concurrency ...int) Lazy {
+	return Lazy(lazy.Source(zf).Parallel(concurrency...))
 }
 
 const iniCollectLength = 13
 const maxChankLength = 10000
 
-func (z Lazy) Collect() (t *Table, err error) {
+func (zf Lazy) Collect() (t *Table, err error) {
 	length := 0
 	columns := []reflect.Value{}
 	names := []string{}
 	na := []mlutil.Bits{}
-	err = z.Drain(func(v reflect.Value) error {
+	err = zf.Drain(func(v reflect.Value) error {
 		if v.Kind() != reflect.Bool {
 			lr := v.Interface().(mlutil.Struct)
 			if length == 0 {
@@ -159,50 +142,49 @@ func (z Lazy) Collect() (t *Table, err error) {
 	return MakeTable(names, columns, na, length), nil
 }
 
-func (z Lazy) LuckyCollect() *Table {
-	t, err := z.Collect()
+func (zf Lazy) LuckyCollect() *Table {
+	t, err := zf.Collect()
 	if err != nil {
-		panic(err)
+		panic(fu.Panic(err))
 	}
 	return t
 }
 
-func (z Lazy) Drain(sink Sink) (err error) {
-	return lazy.Source(z).Drain(sink)
+func (zf Lazy) Drain(sink Sink) (err error) {
+	return lazy.Source(zf).Drain(sink)
 }
 
-func (z Lazy) LuckySink(sink Sink) {
-	if err := z.Drain(sink); err != nil {
-		panic(err)
+func (zf Lazy) LuckySink(sink Sink) {
+	if err := zf.Drain(sink); err != nil {
+		panic(fu.Panic(err))
 	}
 }
 
-func (z Lazy) Count() (int, error) {
-	return lazy.Source(z).Count()
+func (zf Lazy) Count() (int, error) {
+	return lazy.Source(zf).Count()
 }
 
-func (z Lazy) LuckyCount() int {
-	c, err := z.Count()
+func (zf Lazy) LuckyCount() int {
+	c, err := zf.Count()
 	if err != nil {
-		panic(err)
+		panic(fu.Panic(err))
 	}
 	return c
 }
 
-func (z Lazy) Rand(seed int, prob float64) Lazy {
-	return Lazy(lazy.Source(z).Rand(seed, prob))
+func (zf Lazy) Rand(seed int, prob float64) Lazy {
+	return Lazy(lazy.Source(zf).Rand(seed, prob))
 }
 
-func (z Lazy) RandSkip(seed int, prob float64) Lazy {
-	return Lazy(lazy.Source(z).RandSkip(seed, prob))
+func (zf Lazy) RandSkip(seed int, prob float64) Lazy {
+	return Lazy(lazy.Source(zf).RandSkip(seed, prob))
 }
 
-func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
-	z := zf()
+func (zf Lazy) RandomFlag(c string, seed int, prob float64) Lazy {
 	return func() lazy.Stream {
+		z := zf()
 		nr := fu.NaiveRandom{Value: uint32(seed)}
 		wc := lazy.WaitCounter{Value: 0}
-		cj := -1
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
 			if index == lazy.STOP {
@@ -211,20 +193,9 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 			if wc.Wait(index) {
 				if err == nil && v.Kind() != reflect.Bool {
 					lr := v.Interface().(mlutil.Struct)
-					if cj < 0 {
-						cj = fu.IndexOf(column, lr.Names)
-					}
 					p := nr.Float()
 					val := reflect.ValueOf(p < prob)
-					lr = lr.Copy(cj + 1)
-					if cj < 0 {
-						lr.Names = append(lr.Names, column)
-						lr.Columns = append(lr.Columns, val)
-					} else {
-						lr.Columns[cj] = val
-						lr.Na.Set(cj, false)
-					}
-					v = reflect.ValueOf(lr)
+					v = reflect.ValueOf(lr.Set(c, val))
 				}
 				wc.Inc()
 			}
@@ -234,8 +205,8 @@ func (zf Lazy) RandomFlag(column string, seed int, prob float64) Lazy {
 }
 
 func (zf Lazy) Round(prec int) Lazy {
-	z := zf()
 	return func() lazy.Stream {
+		z := zf()
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
 			if err != nil || v.Kind() == reflect.Bool {
@@ -254,4 +225,84 @@ func (zf Lazy) Round(prec int) Lazy {
 			return reflect.ValueOf(lr), nil
 		}
 	}
+}
+
+func (zf Lazy) IfFlag(c string) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lr := v.Interface().(mlutil.Struct)
+			if j := fu.IndexOf(c, lr.Names); j >= 0 && lr.Columns[j].Bool() {
+				return
+			}
+			return mlutil.True, nil
+		}
+	}
+}
+
+func (zf Lazy) IfNotFlag(c string) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lr := v.Interface().(mlutil.Struct)
+			if j := fu.IndexOf(c, lr.Names); j < 0 || !lr.Columns[j].Bool() {
+				return
+			}
+			return mlutil.True, nil
+		}
+	}
+}
+
+func (zf Lazy) True(c string) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lr := v.Interface().(mlutil.Struct)
+			return reflect.ValueOf(lr.Set(c, mlutil.True)), nil
+		}
+	}
+}
+
+func (zf Lazy) False(c string) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lr := v.Interface().(mlutil.Struct)
+			return reflect.ValueOf(lr.Set(c, mlutil.False)), nil
+		}
+	}
+}
+
+func (zf Lazy) Chain(zx Lazy) Lazy {
+	return Lazy(lazy.Source(zf).Chain(lazy.Source(zx), func(a, b reflect.Value) (eqt bool) {
+		if lr, ok := a.Interface().(mlutil.Struct); ok {
+			if lrx, ok := b.Interface().(mlutil.Struct); ok {
+				if len(lrx.Names) != len(lr.Names) {
+					for i, n := range lrx.Names {
+						if n != lr.Names[i] || lrx.Columns[i].Type() != lr.Columns[i].Type() {
+							return false
+						}
+					}
+					eqt = true
+				}
+			}
+		}
+		return
+	}))
 }

@@ -32,4 +32,3 @@ var Float64Zero = reflect.ValueOf(float64(0))
 var TsZero = reflect.ValueOf(time.Time{})
 var True = reflect.ValueOf(true)
 var False = reflect.ValueOf(false)
-

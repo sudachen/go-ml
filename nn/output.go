@@ -16,7 +16,7 @@ type Output struct {
 func (ly *Output) Combine(a *mx.Symbol) *mx.Symbol {
 	name := ly.Name
 	if name == "" {
-		name = fmt.Sprintf("Output%d", mx.NextSymbolId())
+		name = fmt.Sprintf("Output%d", NextSymbolId())
 	}
 	if ly.Round > 0 {
 		name = fmt.Sprintf("%s$RNN%02d", name, ly.Round)

@@ -8,7 +8,7 @@ import (
 )
 
 var dataset = fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
-	fu.Cached("go-ml/datasets/iris/iris.csv"))
+	fu.Cached("go-ml/dataset/iris/iris.csv"))
 
 var Data tables.Lazy = func() lazy.Stream {
 	var cls = tables.Enumset{}

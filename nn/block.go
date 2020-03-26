@@ -8,6 +8,13 @@ type Block interface {
 	Combine(*mx.Symbol) *mx.Symbol
 }
 
+func Combine(nn Block) *mx.Symbol {
+	symbolMu.Lock()
+	defer symbolMu.Unlock()
+	resetSymbolId(0)
+	return nn.Combine(mx.Input())
+}
+
 type BlockConnect struct {
 	blocks []Block
 }

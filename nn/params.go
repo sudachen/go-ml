@@ -1,60 +1,174 @@
 package nn
 
 import (
-	"compress/gzip"
-	"encoding/json"
+	"bufio"
+	"encoding/binary"
+	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-ml/nn/mx"
+	"golang.org/x/xerrors"
 	"io"
-	"os"
+	"math"
 )
 
-type Params struct {
-	P map[string][]float32 `json:"params"`
+func (network *Network) SaveParams(output fu.Output) (err error) {
+	var wr fu.Whole
+	if wr, err = output.Create(); err != nil {
+		return fu.Etrace(err)
+	}
+	defer wr.End()
+	params := fu.SortedKeysOf(network.Params).([]string)
+	b := []byte{0, 0, 0, 0}
+	dil := []byte{0xa, '-', '-', 0xa}
+	magic := []byte{'A', 'N', 'N', '1'}
+	order := binary.ByteOrder(binary.LittleEndian)
+	if _, err = wr.Write(magic); err != nil {
+		return fu.Etrace(err)
+	}
+	count := 0
+	for _, n := range params {
+		if n[0] != '_' {
+			count++
+		}
+	}
+	order.PutUint32(b, uint32(count))
+	if _, err = wr.Write(b); err != nil {
+		return fu.Etrace(err)
+	}
+	if _, err = wr.Write(dil); err != nil {
+		return fu.Etrace(err)
+	}
+	for _, n := range params {
+		d := network.Params[n]
+		if err = binary.Write(wr, order, int32(len(n))); err != nil {
+			return fu.Etrace(err)
+		}
+		if err = binary.Write(wr, order, []byte(n)); err != nil {
+			return fu.Etrace(err)
+		}
+		dim := d.Dim()
+		order.PutUint32(b, uint32(dim.Len))
+		if _, err = wr.Write(b); err != nil {
+			return fu.Etrace(err)
+		}
+		for i := 0; i < dim.Len; i++ {
+			order.PutUint32(b, uint32(dim.Shape[i]))
+			if _, err = wr.Write(b); err != nil {
+				return fu.Etrace(err)
+			}
+		}
+		total := dim.Total()
+		order.PutUint32(b, uint32(total))
+		if _, err = wr.Write(b); err != nil {
+			return fu.Etrace(err)
+		}
+		v := d.ValuesF32()
+		for i := 0; i < total; i++ {
+			order.PutUint32(b, math.Float32bits(v[i]))
+			if _, err = wr.Write(b); err != nil {
+				return fu.Etrace(err)
+			}
+		}
+		if _, err = wr.Write(dil); err != nil {
+			return fu.Etrace(err)
+		}
+	}
+	return wr.Commit()
 }
 
-func LoadParams(fname string) (Params, error) {
-	f, err := os.Open(fname)
-	if err != nil {
-		return Params{}, err
+func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
+	var rd io.ReadCloser
+	if rd, err = input.Open(); err != nil {
+		return fu.Etrace(err)
 	}
-	defer f.Close()
-	p := Params{}
-	if err = p.Read(f); err != nil {
-		return Params{}, err
+	defer rd.Close()
+	r := bufio.NewReader(rd)
+	b := []byte{0, 0, 0, 0}
+	equal4b := func(a []byte) bool { return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3] }
+	dil := []byte{0xa, '-', '-', 0xa}
+	magic := []byte{'A', 'N', 'N', '1'}
+	order := binary.ByteOrder(binary.LittleEndian)
+	if _, err = io.ReadFull(r, b); err != nil {
+		return fu.Etrace(err)
 	}
-	return p, nil
-}
-
-func (p *Params) Read(reader io.Reader) error {
-	gz, err := gzip.NewReader(reader)
-	defer gz.Close()
-	if err != nil {
-		return err
+	if !equal4b(magic) {
+		return xerrors.Errorf("bad magic")
 	}
-	if err = json.NewDecoder(gz).Decode(p); err != nil {
-		return err
+	if _, err = io.ReadFull(r, b); err != nil {
+		return fu.Etrace(err)
 	}
+	count := int(order.Uint32(b))
+	if _, err = io.ReadFull(r, b); err != nil {
+		return fu.Etrace(err)
+	}
+	if !equal4b(dil) {
+		return xerrors.Errorf("bad delimiter")
+	}
+	ready := map[string]bool{}
+	v := []float32{}
+	for j := 0; j < count; j++ {
+		var ln int32
+		if err = binary.Read(r, order, &ln); err != nil {
+			return fu.Etrace(err)
+		}
+		ns := make([]byte, ln)
+		if err = binary.Read(r, order, &ns); err != nil {
+			return fu.Etrace(err)
+		}
+		n := string(ns)
+		d, ok := network.Params[n]
+		if !ok && fu.Fnzb(forced...) {
+			return xerrors.Errorf("layer '%v' is not exists in the network", n)
+		}
+		dim := mx.Dimension{}
+		if _, err = io.ReadFull(r, b); err != nil {
+			return fu.Etrace(err)
+		}
+		dim.Len = int(order.Uint32(b))
+		if dim.Len > mx.MaxDimensionCount {
+			return xerrors.Errorf("bad deimension of '%v' layer params", n)
+		}
+		for i := 0; i < dim.Len; i++ {
+			if _, err = io.ReadFull(r, b); err != nil {
+				return fu.Etrace(err)
+			}
+			dim.Shape[i] = int(order.Uint32(b))
+		}
+		if _, err = io.ReadFull(r, b); err != nil {
+			return fu.Etrace(err)
+		}
+		total := int(order.Uint32(b))
+		if total != dim.Total() {
+			return xerrors.Errorf("bad deimension of '%v' layer params or values total count is incorrect", n)
+		}
+		if ok {
+			v = make([]float32, total)
+		}
+		for i := range v {
+			if _, err = io.ReadFull(r, b); err != nil {
+				return fu.Etrace(err)
+			}
+			if ok {
+				v[i] = math.Float32frombits(order.Uint32(b))
+			}
+		}
+		if _, err = io.ReadFull(r, b); err != nil {
+			return fu.Etrace(err)
+		}
+		if !equal4b(dil) {
+			return xerrors.Errorf("bad delimiter")
+		}
+		if ok {
+			d.SetValues(v)
+			ready[n] = true
+		}
+	}
+	for k := range network.Params {
+		if !ready[k] {
+			if k[0] != '_' && fu.Fnzb(forced...) {
+				return xerrors.Errorf("layer '%v' does not exists in params file", k)
+			}
+		}
+	}
+	network.Initialized = true
 	return nil
-}
-
-func (p *Params) Save(fname string) error {
-	f, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err = p.Write(f); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p Params) Write(writer io.Writer) error {
-	gz, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
-	if err != nil {
-		return err
-	}
-	if err = json.NewEncoder(gz).Encode(&p); err != nil {
-		return err
-	}
-	return gz.Close()
 }

@@ -33,7 +33,7 @@ func (ly *Convolution) Combine(in *mx.Symbol) *mx.Symbol {
 
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("Conv%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("Conv%02d", NextSymbolId())
 	}
 	weight := mx.Var(ns+"_weight", ly.WeightInit)
 	if !ly.NoBias {
@@ -81,7 +81,7 @@ type MaxPool struct {
 func (ly *MaxPool) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("MaxPool%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("MaxPool%02d", NextSymbolId())
 	}
 	out := mx.Pool(in, ly.Kernel, ly.Stride, ly.Padding, ly.Ceil, true)
 	if ly.Round != 0 {
@@ -108,7 +108,7 @@ type AvgPool struct {
 func (ly *AvgPool) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("AvgPool%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("AvgPool%02d", NextSymbolId())
 	}
 	out := mx.Pool(in, ly.Kernel, ly.Stride, ly.Padding, ly.Ceil, false)
 	if ly.Round != 0 {

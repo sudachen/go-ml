@@ -28,13 +28,13 @@ func init() {
 	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
 		so = dl.Load(
 			dl.Custom("/opt/xgboost/lib/libxgboost.so"),
-			dl.Cached("dl/go-ml/libxgboost.so"),
+			dl.Cached("dl/go-model/libxgboost.so"),
 			dl.System("libxgboost.so"),
 			dl.LzmaExternal("https://github.com/sudachen/xgboost/releases/download/custom/libxgboost_cpu_lin64.lzma"),
 			dlVerbose)
 	} else if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
 		so = dl.Load(
-			dl.Cached("dl/go-ml/xgboost.dll"),
+			dl.Cached("dl/go-model/xgboost.dll"),
 			dl.System("xgboost.dll"),
 			dl.LzmaExternal("https://github.com/sudachen/xgboost/releases/download/custom/libxgboost_cpu_win64.lzma"),
 			dlVerbose)
@@ -71,6 +71,7 @@ func init() {
 	so.Bind("XGDMatrixSetUIntInfo", unsafe.Pointer(&C._godl_XGDMatrixSetUIntInfo))
 	so.Bind("XGDMatrixGetFloatInfo", unsafe.Pointer(&C._godl_XGDMatrixGetFloatInfo))
 	so.Bind("XGDMatrixGetUIntInfo", unsafe.Pointer(&C._godl_XGDMatrixGetUIntInfo))
+	so.Bind("XGBoosterDumpModelEx", unsafe.Pointer(&C._godl_XGBoosterDumpModelEx))
 
 	var major, minor, patch C.int
 	C.XGBoostVersion(&major, &minor, &patch)
@@ -228,6 +229,50 @@ func Predict(b, matrix unsafe.Pointer, limit int) (result []float32) {
 	result = make([]float32, dtlen)
 	for i := range result {
 		result[i] = float32(*(*C.float)(unsafe.Pointer((uintptr(dt) + uintptr(4*i)))))
+	}
+	return
+}
+
+func JsonConfig(b unsafe.Pointer) (js []byte) {
+	ln := C.ulong(0)
+	jsp := unsafe.Pointer(nil)
+	if e := C.XGBoosterSaveJsonConfig(C.BoosterHandle(b), &ln, unsafe.Pointer(&jsp)); e != 0 {
+		s := C.GoString(C.XGBGetLastError())
+		panic(xerrors.Errorf("xgbooster error: " + s))
+	}
+	return C.GoBytes(jsp, C.int(ln))
+}
+
+func GetModel(b unsafe.Pointer) (dt []byte) {
+	ln := C.ulong(0)
+	dtp := unsafe.Pointer(nil)
+	if e := C.XGBoosterGetModelRaw(C.BoosterHandle(b), &ln, unsafe.Pointer(&dtp)); e != 0 {
+		s := C.GoString(C.XGBGetLastError())
+		panic(xerrors.Errorf("xgbooster error: " + s))
+	}
+	return C.GoBytes(dtp, C.int(ln))
+}
+
+func SetModel(b unsafe.Pointer, dt []byte) {
+	if e := C.XGBoosterLoadModelFromBuffer(C.BoosterHandle(b), unsafe.Pointer(&dt[0]), C.ulong(len(dt))); e != 0 {
+		s := C.GoString(C.XGBGetLastError())
+		panic(xerrors.Errorf("xgbooster error: " + s))
+	}
+}
+
+var text = [...]C.char{'t', 'e', 'x', 't', 0}
+var empty = [...]C.char{0}
+
+func DumpModel(b unsafe.Pointer) (r []string) {
+	ln := C.ulong(0)
+	dtp := unsafe.Pointer(nil)
+	if e := C.XGBoosterDumpModelEx(C.BoosterHandle(b), &empty[0], C.int(1), &text[0], &ln, unsafe.Pointer(&dtp)); e != 0 {
+		s := C.GoString(C.XGBGetLastError())
+		panic(xerrors.Errorf("xgbooster error: " + s))
+	}
+	r = make([]string, int(ln))
+	for i := range r {
+		r[i] = C.GoString(*(**C.char)(mlutil.Index(i, (**C.char)(dtp))))
 	}
 	return
 }

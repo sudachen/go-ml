@@ -14,7 +14,7 @@ type BatchNorm struct {
 func (ly *BatchNorm) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
-		ns = fmt.Sprintf("BatchNorm%02d", mx.NextSymbolId())
+		ns = fmt.Sprintf("BatchNorm%02d", NextSymbolId())
 	} else {
 		ns += "$BN"
 	}

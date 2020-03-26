@@ -185,3 +185,42 @@ func Transformer(rt reflect.Type) func(reflect.Value, reflect.Value) reflect.Val
 		return reflect.ValueOf(lr)
 	}
 }
+
+func NaStruct(names []string, tp reflect.Type) Struct {
+	columns := make([]reflect.Value, len(names))
+	for i := range columns {
+		columns[i] = reflect.Zero(tp)
+	}
+	return Struct{names, columns, FillBits(len(names))}
+}
+
+func MakeStruct(names []string, vals ...interface{}) Struct {
+	columns := make([]reflect.Value, len(names))
+	for i := range columns {
+		columns[i] = reflect.ValueOf(vals[i])
+	}
+	return Struct{names, columns, Bits{}}
+}
+
+func (lr Struct) Set(c string, val reflect.Value) Struct {
+	cj := fu.IndexOf(c, lr.Names)
+	lr = lr.Copy(cj + 1)
+	if cj < 0 {
+		lr.Names = append(lr.Names, c)
+		lr.Columns = append(lr.Columns, val)
+	} else {
+		lr.Columns[cj] = val
+		lr.Na.Set(cj, false)
+	}
+	return lr
+}
+
+func (lr Struct) Index(c string) Cell {
+	j := fu.IndexOf(c, lr.Names)
+	return Cell{lr.Columns[j]}
+}
+
+func (lr Struct) Int(c string) int       { return lr.Index(c).Int() }
+func (lr Struct) Float(c string) float64 { return lr.Index(c).Float() }
+func (lr Struct) Real(c string) float32  { return lr.Index(c).Real() }
+func (lr Struct) Text(c string) string   { return lr.Index(c).Text() }

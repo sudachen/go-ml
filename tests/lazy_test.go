@@ -83,23 +83,22 @@ func Test_LazyCsvRdb1(t *testing.T) {
 			Id             string
 			F1, F2, F3, F4 float64
 		}{}).
-		Drain(csv.Sink(&bf,
+		Drain(csv.Sink(fu.Writer(&bf),
 			csv.Column("Id").As("id"),
 			csv.Column("F*").Round(2).As("f*")))
 
 	assert.NilError(t, err)
 	assert.Assert(t, bf.String() == CSV)
-
 }
 
 /*
 func Test_LazyBatch(t *testing.T) {
-	datasets := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
-		fu.Cached("go-ml/datasets/iris/iris.csv"))
+	dataset := fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
+		fu.Cached("go-model/dataset/iris/iris.csv"))
 
 	cls := tables.Enumset{}
 
-	z := csv.Source(datasets,
+	z := csv.Source(dataset,
 		csv.Float32("sepallength").As("Feature1"),
 		csv.Float32("sepalwidth").As("Feature2"),
 		csv.Float32("petallength").As("Feature3"),

@@ -23,36 +23,13 @@ func Col(a interface{}) *Column {
 }
 
 /*
-Col returns Column object for the table' column selected by the name
-
-	t := tables.New([]struct{Name string; Age int; Rate float32}{{"Ivanov",42,1.2},{"Petrov",42,1.5}})
-	t.Col("Name").String(0) -> "Ivanov"
-	t.Col("Name").Len() -> 2
-*/
-func (t *Table) Col(column string) *Column {
-	for i, n := range t.raw.Names {
-		if n == column {
-			if t.cols == nil {
-				t.cols = make([]*Column, len(t.raw.Names))
-			}
-			if t.cols[i] == nil {
-				c := &Column{t.raw.Columns[i], t.raw.Na[i]}
-				t.cols[i] = c
-			}
-			return t.cols[i]
-		}
-	}
-	panic("there is not column with name " + column)
-}
-
-/*
-String returns column' value converted to string
+Text returns column' value converted to string
 
 	t := table.New([]struct{Name string; Age int; Rate float}{{"Ivanov",32,1.2},{"Petrov",44,1.5}})
-	t.Col("Name").String(0) -> "Ivanov"
+	t.Col("Name").Text(0) -> "Ivanov"
 	t.Col("Name").Index(0).String() -> "Ivanov"
 */
-func (c *Column) String(row int) string {
+func (c *Column) Text(row int) string {
 	return c.Index(row).String()
 }
 
@@ -415,8 +392,12 @@ Index returns cell with value at specified index
 	c.Float32() -> 33.0
 	c.TzeInt() -> 33
 */
-func (c *Column) Index(i int) Cell {
-	return Cell{c.column.Index(i)}
+func (c *Column) Index(i int) mlutil.Cell {
+	return mlutil.Cell{c.column.Index(i)}
+}
+
+func (c *Column) Value(i int) reflect.Value {
+	return c.column.Index(i)
 }
 
 /*
@@ -426,8 +407,8 @@ Max returns cell with max column' maximal value
 	t.Col("Age").Max().TzeInt() -> 44
 	t.Col("Rate").Max().Float32() -> 1.5
 */
-func (c *Column) Max() Cell {
-	return Cell{fu.MaxValue(c.column)}
+func (c *Column) Max() mlutil.Cell {
+	return mlutil.Cell{fu.MaxValue(c.column)}
 }
 
 /*
@@ -437,8 +418,8 @@ Min returns cell with column' minimal value
 	t.Col("Age").Min().TzeInt() -> 32
 	t.Col("Rate").Min().Float32() -> 1.2
 */
-func (c *Column) Min() Cell {
-	return Cell{fu.MinValue(c.column)}
+func (c *Column) Min() mlutil.Cell {
+	return mlutil.Cell{fu.MinValue(c.column)}
 }
 
 /*

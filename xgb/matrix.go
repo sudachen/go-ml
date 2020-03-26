@@ -11,13 +11,19 @@ type Matrix struct {
 }
 
 func (m Matrix) Free() {
-	capi.Free(m.handle)
+	if m.handle != nil {
+		capi.Free(m.handle)
+	}
 }
 
 func matrix32(matrix tables.Matrix) Matrix {
-	handle := capi.Matrix(matrix.Features, matrix.Length, matrix.Width)
-	if matrix.LabelsWidth > 0 {
-		capi.SetInfo(handle, "label", matrix.Labels)
+	if matrix.Length > 0 {
+		handle := capi.Matrix(matrix.Features, matrix.Length, matrix.Width)
+		if matrix.LabelsWidth > 0 {
+			capi.SetInfo(handle, "label", matrix.Labels)
+		}
+		return Matrix{handle}
+	} else {
+		return Matrix{nil}
 	}
-	return Matrix{handle}
 }

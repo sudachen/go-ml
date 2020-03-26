@@ -30,12 +30,12 @@ func Column(v string) resolver {
 func (r resolver) Group(v string) resolver {
 	return func() mapper {
 		g := r()
-		z := tables.Xtensor{g.valueType }
+		z := tables.Xtensor{g.valueType}
 		x := g
 		x.TableCol = v
 		x.group = true
 		x.valueType = z.Type()
-		x.convert = func(value string, field *reflect.Value, index, width int) (_ bool, err error){
+		x.convert = func(value string, field *reflect.Value, index, width int) (_ bool, err error) {
 			err = z.ConvertElm(value, field, index, width)
 			return
 		}
@@ -60,7 +60,7 @@ func Tensor64f(v string) resolver {
 func Tensor8u(v string) resolver {
 	return func() mapper {
 		x := tables.Xtensor{mlutil.Byte}
-		return Mapper(v, v, x.Type(), x.Convert, x.Format )
+		return Mapper(v, v, x.Type(), x.Convert, x.Format)
 	}
 }
 
@@ -79,17 +79,17 @@ func Meta(x tables.Meta, v string) resolver {
 
 func String(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.String, nil, nil )
+		return Mapper(v, v, mlutil.String, nil, nil)
 	}
 }
 
 func Int(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Int, converti, nil )
+		return Mapper(v, v, mlutil.Int, converti, nil)
 	}
 }
 
-func converti(s string, value *reflect.Value, _,_ int) (na bool, err error) {
+func converti(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
 		*value = mlutil.IntZero
 		return true, nil
@@ -105,9 +105,9 @@ func Fixed8(v string) resolver {
 	}
 }
 
-func convert8f(s string, value *reflect.Value, _,_ int) (na bool, err error) {
+func convert8f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value =  mlutil.Fixed8Zero
+		*value = mlutil.Fixed8Zero
 		return true, nil
 	}
 	f, err := mlutil.Fast8f(s)
@@ -121,9 +121,9 @@ func Float32(v string) resolver {
 	}
 }
 
-func convert32f(s string, value *reflect.Value, _,_ int) (na bool, err error) {
+func convert32f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value =  mlutil.Float32Zero
+		*value = mlutil.Float32Zero
 		return true, nil
 	}
 	f, err := mlutil.Fast32f(s)
@@ -133,11 +133,11 @@ func convert32f(s string, value *reflect.Value, _,_ int) (na bool, err error) {
 
 func Float64(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Float64, convert64f, nil )
+		return Mapper(v, v, mlutil.Float64, convert64f, nil)
 	}
 }
 
-func convert64f(s string, value *reflect.Value, _,_ int) (na bool, err error) {
+func convert64f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
 		*value = mlutil.Float64Zero
 		return true, nil
@@ -154,7 +154,7 @@ func Time(v string, layout ...string) resolver {
 	}
 	return func() mapper {
 		return Mapper(v, v, mlutil.Ts,
-			func(s string, value *reflect.Value, _,_ int) (bool, error) {
+			func(s string, value *reflect.Value, _, _ int) (bool, error) {
 				return convertts(s, l, value)
 			}, nil)
 	}
