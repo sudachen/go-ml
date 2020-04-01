@@ -1,8 +1,7 @@
-package mlutil
+package fu
 
 import (
 	"fmt"
-	"golang.org/x/xerrors"
 	"strconv"
 )
 
@@ -27,7 +26,7 @@ func Fast8f(s string) (v8 Fixed8, err error) {
 		return
 	}
 	if v > 1.27 || v < -1.27 {
-		return Fixed8{}, xerrors.Errorf("fixed8 value out of range [-1.27...1.27] : %v", v)
+		return Fixed8{}, fmt.Errorf("fixed8 value out of range [-1.27...1.27] : %v", v)
 	}
 	v8 = AsFixed8(v)
 	return

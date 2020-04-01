@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
 	"gotest.tools/assert"
 	"gotest.tools/assert/cmp"

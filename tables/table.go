@@ -5,9 +5,8 @@ package tables
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/lazy"
 	"golang.org/x/xerrors"
 	"math/bits"
 	"reflect"
@@ -25,7 +24,7 @@ Raw is the row presentation of a table, can be accessed by the Table.Raw method
 type Raw struct {
 	Names   []string
 	Columns []reflect.Value
-	Na      []mlutil.Bits
+	Na      []fu.Bits
 	Length  int
 }
 
@@ -53,7 +52,7 @@ it's the tables.AnyData interface implementation
 */
 func (t *Table) Lazy() Lazy {
 	return func() lazy.Stream {
-		flag := &lazy.AtomicFlag{Value: 1}
+		flag := &fu.AtomicFlag{Value: 1}
 		return func(index uint64) (v reflect.Value, err error) {
 			if index == lazy.STOP {
 				flag.Clear()
@@ -128,7 +127,7 @@ func Empty() *Table {
 /*
 MakeTable creates ne non-empty table
 */
-func MakeTable(names []string, columns []reflect.Value, na []mlutil.Bits, length int) *Table {
+func MakeTable(names []string, columns []reflect.Value, na []fu.Bits, length int) *Table {
 	return &Table{
 		raw: Raw{
 			Names:   names,
@@ -173,40 +172,40 @@ func New(o interface{}) *Table {
 			panic("slice of structures allowed only")
 		}
 
-		if l > 0 && (tp == mlutil.StructType) {
+		if l > 0 && (tp == fu.StructType) {
 			// New([]mlutil.Struct{{}})
-			lrx := q.Interface().([]mlutil.Struct)
+			lrx := q.Interface().([]fu.Struct)
 			names := lrx[0].Names
 			columns := make([]reflect.Value, len(names))
 			for i := range columns {
 				columns[i] = reflect.MakeSlice(reflect.SliceOf(lrx[0].Columns[i].Type()), l, l)
 			}
-			na := make([]mlutil.Bits, len(names))
+			na := make([]fu.Bits, len(names))
 			for i := range names {
 				for j := 0; j < l; j++ {
 					columns[i].Index(j).Set(lrx[j].Columns[i])
 					na[i].Set(j, lrx[j].Na.Bit(i))
 				}
 			}
-			return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+			return MakeTable(names, columns, make([]fu.Bits, len(names)), l)
 		}
 
-		if l > 0 && (tp.Kind() == reflect.Ptr && tp.Elem() == mlutil.StructType) {
+		if l > 0 && (tp.Kind() == reflect.Ptr && tp.Elem() == fu.StructType) {
 			// New([]*mlutil.Struct{{}})
-			lrx := q.Interface().([]*mlutil.Struct)
+			lrx := q.Interface().([]*fu.Struct)
 			names := lrx[0].Names
 			columns := make([]reflect.Value, len(names))
 			for i := range columns {
 				columns[i] = reflect.MakeSlice(reflect.SliceOf(lrx[0].Columns[i].Type()), l, l)
 			}
-			na := make([]mlutil.Bits, len(names))
+			na := make([]fu.Bits, len(names))
 			for i := range names {
 				for j := 0; j < l; j++ {
 					columns[i].Index(j).Set(lrx[j].Columns[i])
 					na[i].Set(j, lrx[j].Na.Bit(i))
 				}
 			}
-			return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+			return MakeTable(names, columns, make([]fu.Bits, len(names)), l)
 		}
 
 		if tp.Kind() == reflect.Ptr {
@@ -230,7 +229,7 @@ func New(o interface{}) *Table {
 			}
 		}
 
-		return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+		return MakeTable(names, columns, make([]fu.Bits, len(names)), l)
 
 	case reflect.Chan: // New(chan struct{})
 		tp := q.Type().Elem()
@@ -257,7 +256,7 @@ func New(o interface{}) *Table {
 			length++
 		}
 
-		return MakeTable(names, columns, make([]mlutil.Bits, len(names)), length)
+		return MakeTable(names, columns, make([]fu.Bits, len(names)), length)
 
 	case reflect.Map: // New(map[string]interface{}{})
 		m := o.(map[string]interface{})
@@ -274,7 +273,7 @@ func New(o interface{}) *Table {
 			reflect.Copy(columns[i], vals)
 		}
 
-		return MakeTable(names, columns, make([]mlutil.Bits, len(names)), l)
+		return MakeTable(names, columns, make([]fu.Bits, len(names)), l)
 	}
 
 	panic("bad argument type")
@@ -303,7 +302,7 @@ func (t *Table) Slice(slice ...int) *Table {
 	for i, v := range t.raw.Columns {
 		rv[i] = v.Slice(from, to)
 	}
-	na := make([]mlutil.Bits, len(t.raw.Columns))
+	na := make([]fu.Bits, len(t.raw.Columns))
 	for i, x := range t.raw.Na {
 		na[i] = x.Slice(from, to)
 	}
@@ -319,9 +318,9 @@ Only takes specified Columns as new table
 	t2.Row(0) -> {"Age": 32, "Rate": 1.2}
 */
 func (t *Table) Only(column ...string) *Table {
-	rn := mlutil.Bits{}
+	rn := fu.Bits{}
 	for _, c := range column {
-		like := mlutil.Pattern(c)
+		like := fu.Pattern(c)
 		for i, x := range t.raw.Names {
 			if like(x) {
 				rn.Set(i, true)
@@ -335,7 +334,7 @@ func (t *Table) Only(column ...string) *Table {
 		}
 	}
 	rv := make([]reflect.Value, 0, len(names))
-	na := make([]mlutil.Bits, 0, len(names))
+	na := make([]fu.Bits, 0, len(names))
 	for i, v := range t.raw.Columns {
 		if rn.Bit(i) {
 			rv = append(rv, v.Slice(0, t.raw.Length))
@@ -346,9 +345,9 @@ func (t *Table) Only(column ...string) *Table {
 }
 
 func (t *Table) Except(column ...string) *Table {
-	rn := mlutil.Bits{}
+	rn := fu.Bits{}
 	for _, c := range column {
-		like := mlutil.Pattern(c)
+		like := fu.Pattern(c)
 		for i, x := range t.raw.Names {
 			if like(x) {
 				rn.Set(i, true)
@@ -362,7 +361,7 @@ func (t *Table) Except(column ...string) *Table {
 		}
 	}
 	rv := make([]reflect.Value, 0, len(names))
-	na := make([]mlutil.Bits, 0, len(names))
+	na := make([]fu.Bits, 0, len(names))
 	for i, v := range t.raw.Columns {
 		if !rn.Bit(i) {
 			rv = append(rv, v.Slice(0, t.raw.Length))
@@ -373,9 +372,9 @@ func (t *Table) Except(column ...string) *Table {
 }
 
 func (t *Table) OnlyNames(column ...string) []string {
-	rn := mlutil.Bits{}
+	rn := fu.Bits{}
 	for _, c := range column {
-		like := mlutil.Pattern(c)
+		like := fu.Pattern(c)
 		for i, x := range t.raw.Names {
 			if like(x) {
 				rn.Set(i, true)
@@ -435,7 +434,7 @@ func (t *Table) Concat(a *Table) *Table {
 	names := t.Names()
 	columns := make([]reflect.Value, len(names), len(names))
 	copy(columns, t.raw.Columns)
-	na := make([]mlutil.Bits, len(names))
+	na := make([]fu.Bits, len(names))
 	copy(na, t.raw.Na)
 
 	for i, n := range a.raw.Names {
@@ -445,7 +444,7 @@ func (t *Table) Concat(a *Table) *Table {
 			col = reflect.AppendSlice(col, a.raw.Columns[i])
 			names = append(names, n)
 			columns = append(columns, col)
-			na = append(na, mlutil.FillBits(t.raw.Length).Append(a.raw.Na[i], t.raw.Length))
+			na = append(na, fu.FillBits(t.raw.Length).Append(a.raw.Na[i], t.raw.Length))
 		} else {
 			columns[j] = reflect.AppendSlice(columns[j], a.raw.Columns[i])
 			na[j] = na[j].Append(a.raw.Na[i], t.raw.Length)
@@ -457,7 +456,7 @@ func (t *Table) Concat(a *Table) *Table {
 			columns[i] = reflect.AppendSlice(
 				col,
 				reflect.MakeSlice(col.Type(), a.raw.Length, a.raw.Length))
-			na[i] = na[i].Append(mlutil.FillBits(a.raw.Length), t.raw.Length)
+			na[i] = na[i].Append(fu.FillBits(a.raw.Length), t.raw.Length)
 		}
 	}
 
@@ -513,7 +512,7 @@ func (t *Table) DropNa(names ...string) *Table {
 		}
 	}
 	rc := t.raw.Length
-	wc := mlutil.Words(t.raw.Length)
+	wc := fu.Words(t.raw.Length)
 	for j := 0; j < wc; j++ {
 		w := uint(0)
 		for _, i := range dx {
@@ -524,7 +523,7 @@ func (t *Table) DropNa(names ...string) *Table {
 	if rc == t.raw.Length {
 		return t
 	}
-	na := make([]mlutil.Bits, len(t.raw.Columns))
+	na := make([]fu.Bits, len(t.raw.Columns))
 	columns := make([]reflect.Value, len(t.raw.Columns))
 	for i := range t.raw.Columns {
 		columns[i] = reflect.MakeSlice(t.raw.Columns[i].Type(), rc, rc)
@@ -567,7 +566,7 @@ func (t *Table) FillNa(r interface{}) *Table {
 	}
 
 	columns := make([]reflect.Value, len(t.raw.Columns))
-	na := make([]mlutil.Bits, len(t.raw.Columns))
+	na := make([]fu.Bits, len(t.raw.Columns))
 	for n, x := range m {
 		j := fu.IndexOf(n, t.raw.Names)
 		if j < 0 {
@@ -604,18 +603,18 @@ func (t *Table) FillNa(r interface{}) *Table {
 	return MakeTable(t.raw.Names, columns, na, t.raw.Length)
 }
 
-func (t *Table) Index(r int) mlutil.Struct {
+func (t *Table) Index(r int) fu.Struct {
 	names := t.raw.Names
 	columns := make([]reflect.Value, len(names))
-	na := mlutil.Bits{}
+	na := fu.Bits{}
 	for i, c := range t.raw.Columns {
 		columns[i] = c.Index(r)
 		na.Set(i, t.raw.Na[i].Bit(r))
 	}
-	return mlutil.Struct{names, columns, na}
+	return fu.Struct{names, columns, na}
 }
 
-func (t *Table) Last() mlutil.Struct {
+func (t *Table) Last() fu.Struct {
 	return t.Index(t.Len() - 1)
 }
 
@@ -628,7 +627,7 @@ func (t *Table) With(column *Column, name string) *Table {
 	}
 	names := make([]string, len(t.raw.Names), len(t.raw.Names)+1)
 	columns := make([]reflect.Value, len(t.raw.Names), len(t.raw.Names)+1)
-	na := make([]mlutil.Bits, len(t.raw.Names), len(t.raw.Names)+1)
+	na := make([]fu.Bits, len(t.raw.Names), len(t.raw.Names)+1)
 	copy(names, t.raw.Names)
 	copy(columns, t.raw.Columns)
 	copy(na, t.raw.Na)

@@ -1,7 +1,7 @@
 package mx
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/nn/mx/capi"
 )
 
@@ -11,10 +11,10 @@ const (
 	VersionPatch = 0
 )
 
-const Version mlutil.VersionType = VersionMajor*10000 + VersionMinor*100 + VersionPatch
+const Version fu.VersionType = VersionMajor*10000 + VersionMinor*100 + VersionPatch
 
-func LibVersion() mlutil.VersionType {
-	return mlutil.VersionType(capi.LibVersion)
+func LibVersion() fu.VersionType {
+	return fu.VersionType(capi.LibVersion)
 }
 
 func GpuCount() int {

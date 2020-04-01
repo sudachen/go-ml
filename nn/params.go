@@ -3,17 +3,19 @@ package nn
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/nn/mx"
+	"github.com/sudachen/go-zorros/zorros"
 	"golang.org/x/xerrors"
 	"io"
 	"math"
 )
 
-func (network *Network) SaveParams(output fu.Output) (err error) {
-	var wr fu.Whole
+func (network *Network) SaveParams(output iokit.Output) (err error) {
+	var wr iokit.Whole
 	if wr, err = output.Create(); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	defer wr.End()
 	params := fu.SortedKeysOf(network.Params).([]string)
@@ -22,7 +24,7 @@ func (network *Network) SaveParams(output fu.Output) (err error) {
 	magic := []byte{'A', 'N', 'N', '1'}
 	order := binary.ByteOrder(binary.LittleEndian)
 	if _, err = wr.Write(magic); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	count := 0
 	for _, n := range params {
@@ -32,53 +34,53 @@ func (network *Network) SaveParams(output fu.Output) (err error) {
 	}
 	order.PutUint32(b, uint32(count))
 	if _, err = wr.Write(b); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	if _, err = wr.Write(dil); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	for _, n := range params {
 		d := network.Params[n]
 		if err = binary.Write(wr, order, int32(len(n))); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		if err = binary.Write(wr, order, []byte(n)); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		dim := d.Dim()
 		order.PutUint32(b, uint32(dim.Len))
 		if _, err = wr.Write(b); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		for i := 0; i < dim.Len; i++ {
 			order.PutUint32(b, uint32(dim.Shape[i]))
 			if _, err = wr.Write(b); err != nil {
-				return fu.Etrace(err)
+				return zorros.Trace(err)
 			}
 		}
 		total := dim.Total()
 		order.PutUint32(b, uint32(total))
 		if _, err = wr.Write(b); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		v := d.ValuesF32()
 		for i := 0; i < total; i++ {
 			order.PutUint32(b, math.Float32bits(v[i]))
 			if _, err = wr.Write(b); err != nil {
-				return fu.Etrace(err)
+				return zorros.Trace(err)
 			}
 		}
 		if _, err = wr.Write(dil); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 	}
 	return wr.Commit()
 }
 
-func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
+func (network *Network) LoadParams(input iokit.Input, forced ...bool) (err error) {
 	var rd io.ReadCloser
 	if rd, err = input.Open(); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	defer rd.Close()
 	r := bufio.NewReader(rd)
@@ -88,17 +90,17 @@ func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
 	magic := []byte{'A', 'N', 'N', '1'}
 	order := binary.ByteOrder(binary.LittleEndian)
 	if _, err = io.ReadFull(r, b); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	if !equal4b(magic) {
 		return xerrors.Errorf("bad magic")
 	}
 	if _, err = io.ReadFull(r, b); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	count := int(order.Uint32(b))
 	if _, err = io.ReadFull(r, b); err != nil {
-		return fu.Etrace(err)
+		return zorros.Trace(err)
 	}
 	if !equal4b(dil) {
 		return xerrors.Errorf("bad delimiter")
@@ -108,11 +110,11 @@ func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
 	for j := 0; j < count; j++ {
 		var ln int32
 		if err = binary.Read(r, order, &ln); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		ns := make([]byte, ln)
 		if err = binary.Read(r, order, &ns); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		n := string(ns)
 		d, ok := network.Params[n]
@@ -121,7 +123,7 @@ func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
 		}
 		dim := mx.Dimension{}
 		if _, err = io.ReadFull(r, b); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		dim.Len = int(order.Uint32(b))
 		if dim.Len > mx.MaxDimensionCount {
@@ -129,12 +131,12 @@ func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
 		}
 		for i := 0; i < dim.Len; i++ {
 			if _, err = io.ReadFull(r, b); err != nil {
-				return fu.Etrace(err)
+				return zorros.Trace(err)
 			}
 			dim.Shape[i] = int(order.Uint32(b))
 		}
 		if _, err = io.ReadFull(r, b); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		total := int(order.Uint32(b))
 		if total != dim.Total() {
@@ -145,14 +147,14 @@ func (network *Network) LoadParams(input fu.Input, forced ...bool) (err error) {
 		}
 		for i := range v {
 			if _, err = io.ReadFull(r, b); err != nil {
-				return fu.Etrace(err)
+				return zorros.Trace(err)
 			}
 			if ok {
 				v[i] = math.Float32frombits(order.Uint32(b))
 			}
 		}
 		if _, err = io.ReadFull(r, b); err != nil {
-			return fu.Etrace(err)
+			return zorros.Trace(err)
 		}
 		if !equal4b(dil) {
 			return xerrors.Errorf("bad delimiter")

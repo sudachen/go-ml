@@ -1,13 +1,13 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/xgb/capi"
 	"runtime"
 	"unsafe"
 )
 
-func LibVersion() mlutil.VersionType {
+func LibVersion() fu.VersionType {
 	return capi.LibVersion
 }
 

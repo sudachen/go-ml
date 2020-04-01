@@ -3,11 +3,11 @@ package rdb
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/lazy"
 	"github.com/sudachen/go-ml/tables"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-zorros/zorros"
 	"io"
 	"reflect"
 	"strings"
@@ -33,7 +33,7 @@ func connectDB(source interface{}, opts []interface{}) (db *sql.DB, o []interfac
 		o = append(o, Driver(drv))
 		db, err = sql.Open(drv, conn)
 	} else if db, ok = source.(*sql.DB); !ok {
-		err = xerrors.Errorf("unknown database source %v", source)
+		err = zorros.Errorf("unknown database source %v", source)
 	} else {
 		o = append(o, dontclose(true))
 	}
@@ -43,12 +43,12 @@ func connectDB(source interface{}, opts []interface{}) (db *sql.DB, o []interfac
 func Source(source interface{}, opts ...interface{}) tables.Lazy {
 	return func() lazy.Stream {
 		db, opts, err := connectDB(source, opts)
-		cls := io.Closer(&fu.CloserChain{})
+		cls := io.Closer(iokit.CloserChain{})
 		if !fu.BoolOption(dontclose(false), opts) {
 			cls = db
 		}
 		if err != nil {
-			tables.SourceError(xerrors.Errorf("database connection error: %w", err))
+			tables.SourceError(zorros.Wrapf(err, "database connection error: %s", err.Error()))
 		}
 		drv := fu.StrOption(Driver(""), opts)
 		schema := fu.StrOption(Schema(""), opts)
@@ -62,7 +62,7 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 		}
 		if err != nil {
 			cls.Close()
-			return lazy.Error(xerrors.Errorf("query error: %w", err))
+			return lazy.Error(zorros.Wrapf(err, "query error: %s", err.Error()))
 		}
 		query := fu.StrOption(Query(""), opts)
 		if query == "" {
@@ -76,18 +76,18 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 		rows, err := db.Query(query)
 		if err != nil {
 			cls.Close()
-			return lazy.Error(xerrors.Errorf("query error: %w", err))
+			return lazy.Error(zorros.Wrapf(err, "query error: %s", err.Error()))
 		}
-		cls = &fu.CloserChain{rows, cls}
+		cls = iokit.CloserChain{rows, cls}
 		tps, err := rows.ColumnTypes()
 		if err != nil {
 			cls.Close()
-			return lazy.Error(xerrors.Errorf("get types error: %w", err))
+			return lazy.Error(zorros.Wrapf(err, "get types error: %s", err.Error()))
 		}
 		ns, err := rows.Columns()
 		if err != nil {
 			cls.Close()
-			return lazy.Error(xerrors.Errorf("get names error: %w", err))
+			return lazy.Error(zorros.Wrapf(err, "get names error: %s", err.Error()))
 		}
 		x := make([]interface{}, len(ns))
 		describe, err := Describe(ns, opts)
@@ -108,8 +108,8 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 			names[i] = colName
 		}
 
-		wc := lazy.WaitCounter{Value: 0}
-		f := lazy.AtomicFlag{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
+		f := fu.AtomicFlag{Value: 0}
 
 		return func(index uint64) (reflect.Value, error) {
 			if index == lazy.STOP {
@@ -120,7 +120,7 @@ func Source(source interface{}, opts ...interface{}) tables.Lazy {
 				end := !rows.Next()
 				if !end {
 					rows.Scan(x...)
-					lr := mlutil.Struct{Names: names, Columns: make([]reflect.Value, len(ns))}
+					lr := fu.Struct{Names: names, Columns: make([]reflect.Value, len(ns))}
 					for i := range x {
 						y := x[i].(SqlScan)
 						v, ok := y.Value()
@@ -213,12 +213,12 @@ func batchInsertStmt(tx *sql.Tx, names []string, pk []bool, lines int, table str
 
 func Sink(source interface{}, opts ...interface{}) tables.Sink {
 	db, opts, err := connectDB(source, opts)
-	cls := io.Closer(&fu.CloserChain{})
+	cls := io.Closer(iokit.CloserChain{})
 	if !fu.BoolOption(dontclose(false), opts) {
 		cls = db
 	}
 	if err != nil {
-		return tables.SinkError(xerrors.Errorf("database connection error: %w", err))
+		return tables.SinkError(zorros.Errorf("database connection error: %w", err))
 	}
 	drv := fu.StrOption(Driver(""), opts)
 
@@ -233,13 +233,13 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 	}
 	if err != nil {
 		cls.Close()
-		return tables.SinkError(xerrors.Errorf("query error: %w", err))
+		return tables.SinkError(zorros.Wrapf(err, "query error: %s", err.Error()))
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
 		cls.Close()
-		return tables.SinkError(xerrors.Errorf("database begin transaction error: %w", err))
+		return tables.SinkError(zorros.Wrapf(err, "database begin transaction error: %s", err.Error()))
 	}
 
 	table := fu.StrOption(Table(""), opts)
@@ -250,7 +250,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 		_, err := tx.Exec(sqlDropQuery(table, opts...))
 		if err != nil {
 			cls.Close()
-			return tables.SinkError(xerrors.Errorf("drop table error: %w", err))
+			return tables.SinkError(zorros.Wrapf(err, "drop table error: %s", err.Error()))
 		}
 	}
 
@@ -267,7 +267,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 				if len(batch) > 0 {
 					if stmt, err = batchInsertStmt(tx, names, pk, len(batch)/len(names), table, opts); err == nil {
 						if _, err = stmt.Exec(batch...); err == nil {
-							cls = fu.CloserChain{stmt, cls}
+							cls = iokit.CloserChain{stmt, cls}
 						}
 					}
 				}
@@ -278,7 +278,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 			cls.Close()
 			return
 		}
-		lr := val.Interface().(mlutil.Struct)
+		lr := val.Interface().(fu.Struct)
 		names = make([]string, len(lr.Names))
 		pk = make([]bool, len(lr.Names))
 		drv := fu.StrOption(Driver(""), opts)
@@ -302,7 +302,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 			_, err = tx.Exec(sqlCreateQuery(lr, table, describe, opts))
 			if err != nil {
 				cls.Close()
-				return xerrors.Errorf("create table error: %w", err)
+				return zorros.Wrapf(err, "create table error: %s", err.Error())
 			}
 			created = true
 		}
@@ -312,7 +312,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 				if err != nil {
 					return err
 				}
-				cls = &fu.CloserChain{stmt, cls}
+				cls = iokit.CloserChain{stmt, cls}
 			}
 			_, err = stmt.Exec(batch...)
 			if err != nil {
@@ -331,7 +331,7 @@ func Sink(source interface{}, opts ...interface{}) tables.Sink {
 	}
 }
 
-func sqlCreateQuery(lr mlutil.Struct, table string, describe func(int) (string, string, bool), opts []interface{}) string {
+func sqlCreateQuery(lr fu.Struct, table string, describe func(int) (string, string, bool), opts []interface{}) string {
 	pk := []string{}
 	query := "create table "
 
@@ -394,7 +394,7 @@ func sqlTypeOf(tp reflect.Type, driver string) string {
 	case reflect.Bool:
 		return "BOOLEAN"
 	default:
-		if tp == mlutil.Ts {
+		if tp == fu.Ts {
 			return "DATETIME"
 		}
 	}

@@ -2,8 +2,7 @@ package csv
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
 	"math"
 	"reflect"
@@ -45,28 +44,28 @@ func (r resolver) Group(v string) resolver {
 
 func Tensor32f(v string) resolver {
 	return func() mapper {
-		x := tables.Xtensor{mlutil.Float32}
+		x := tables.Xtensor{fu.Float32}
 		return Mapper(v, v, x.Type(), x.Convert, x.Format)
 	}
 }
 
 func Tensor64f(v string) resolver {
 	return func() mapper {
-		x := tables.Xtensor{mlutil.Float64}
+		x := tables.Xtensor{fu.Float64}
 		return Mapper(v, v, x.Type(), x.Convert, x.Format)
 	}
 }
 
 func Tensor8u(v string) resolver {
 	return func() mapper {
-		x := tables.Xtensor{mlutil.Byte}
+		x := tables.Xtensor{fu.Byte}
 		return Mapper(v, v, x.Type(), x.Convert, x.Format)
 	}
 }
 
 func Tensor8f(v string) resolver {
 	return func() mapper {
-		x := tables.Xtensor{mlutil.Fixed8Type}
+		x := tables.Xtensor{fu.Fixed8Type}
 		return Mapper(v, v, x.Type(), x.Convert, x.Format)
 	}
 }
@@ -79,19 +78,19 @@ func Meta(x tables.Meta, v string) resolver {
 
 func String(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.String, nil, nil)
+		return Mapper(v, v, fu.String, nil, nil)
 	}
 }
 
 func Int(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Int, converti, nil)
+		return Mapper(v, v, fu.Int, converti, nil)
 	}
 }
 
 func converti(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value = mlutil.IntZero
+		*value = fu.IntZero
 		return true, nil
 	}
 	v, err := strconv.ParseInt(s, 10, 64)
@@ -101,45 +100,45 @@ func converti(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 
 func Fixed8(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Fixed8Type, convert8f, nil)
+		return Mapper(v, v, fu.Fixed8Type, convert8f, nil)
 	}
 }
 
 func convert8f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value = mlutil.Fixed8Zero
+		*value = fu.Fixed8Zero
 		return true, nil
 	}
-	f, err := mlutil.Fast8f(s)
+	f, err := fu.Fast8f(s)
 	*value = reflect.ValueOf(f)
 	return
 }
 
 func Float32(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Float32, convert32f, nil)
+		return Mapper(v, v, fu.Float32, convert32f, nil)
 	}
 }
 
 func convert32f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value = mlutil.Float32Zero
+		*value = fu.Float32Zero
 		return true, nil
 	}
-	f, err := mlutil.Fast32f(s)
+	f, err := fu.Fast32f(s)
 	*value = reflect.ValueOf(f)
 	return
 }
 
 func Float64(v string) resolver {
 	return func() mapper {
-		return Mapper(v, v, mlutil.Float64, convert64f, nil)
+		return Mapper(v, v, fu.Float64, convert64f, nil)
 	}
 }
 
 func convert64f(s string, value *reflect.Value, _, _ int) (na bool, err error) {
 	if s == "" {
-		*value = mlutil.Float64Zero
+		*value = fu.Float64Zero
 		return true, nil
 	}
 	v, err := strconv.ParseFloat(s, 32)
@@ -153,7 +152,7 @@ func Time(v string, layout ...string) resolver {
 		l = layout[0]
 	}
 	return func() mapper {
-		return Mapper(v, v, mlutil.Ts,
+		return Mapper(v, v, fu.Ts,
 			func(s string, value *reflect.Value, _, _ int) (bool, error) {
 				return convertts(s, l, value)
 			}, nil)
@@ -162,7 +161,7 @@ func Time(v string, layout ...string) resolver {
 
 func convertts(s string, layout string, value *reflect.Value) (na bool, err error) {
 	if s == "" {
-		*value = mlutil.TsZero
+		*value = fu.TsZero
 		return true, nil
 	}
 	v, err := strconv.ParseFloat(s, 32)

@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -37,7 +37,7 @@ func (str STR) Assert(t *testing.T, f func(string) (string, bool)) {
 }
 
 func Test_Subst1(t *testing.T) {
-	f := mlutil.Starsub("test*", "F*")
+	f := fu.Starsub("test*", "F*")
 	for _, x := range []STR{
 		{"test1", "F1", true},
 		{"tes1", "tes1", false},
@@ -49,7 +49,7 @@ func Test_Subst1(t *testing.T) {
 }
 
 func Test_Subst3(t *testing.T) {
-	f := mlutil.Starsub("*test", "F*")
+	f := fu.Starsub("*test", "F*")
 	for _, x := range []STR{
 		{"123test", "F123", true},
 		{"tes1", "tes1", false},
@@ -61,7 +61,7 @@ func Test_Subst3(t *testing.T) {
 }
 
 func Test_Subst4(t *testing.T) {
-	f := mlutil.Starsub("test*", "F")
+	f := fu.Starsub("test*", "F")
 	for _, x := range []STR{
 		{"testXX", "F1", true},
 		{"testYY", "F2", true},
@@ -73,7 +73,7 @@ func Test_Subst4(t *testing.T) {
 }
 
 func Test_Subst5(t *testing.T) {
-	f := mlutil.Starsub("test*", "F*i")
+	f := fu.Starsub("test*", "F*i")
 	for _, x := range []STR{
 		{"testXX", "FXXi", true},
 		{"testYY", "FYYi", true},

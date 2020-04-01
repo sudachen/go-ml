@@ -1,7 +1,7 @@
 package nn
 
 import (
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/nn/mx"
 )
 

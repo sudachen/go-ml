@@ -1,8 +1,7 @@
-package mlutil
+package fu
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"golang.org/x/xerrors"
+	"fmt"
 	"io"
 )
 
@@ -10,8 +9,8 @@ type CopyProgress func(count int)
 type CopyBufferSize int
 
 func Copy(writer io.Writer, reader io.Reader, opts ...interface{}) (count int, err error) {
-	cp := fu.IfsOption(CopyProgress(func(int) {}), opts).(CopyProgress)
-	size := fu.IntOption(CopyBufferSize(32*1024), opts)
+	cp := IfsOption(CopyProgress(func(int) {}), opts).(CopyProgress)
+	size := IntOption(CopyBufferSize(32*1024), opts)
 	buf := make([]byte, size)
 	for {
 		if nr, er := reader.Read(buf); nr > 0 {
@@ -23,7 +22,7 @@ func Copy(writer io.Writer, reader io.Reader, opts ...interface{}) (count int, e
 				count += nw
 			}
 			if nr != nw {
-				err = xerrors.Errorf("short write")
+				err = fmt.Errorf("short write")
 				return
 			}
 			cp(count)

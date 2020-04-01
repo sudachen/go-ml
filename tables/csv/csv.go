@@ -2,11 +2,11 @@ package csv
 
 import (
 	"encoding/csv"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/lazy"
 	"github.com/sudachen/go-ml/tables"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-zorros/zorros"
 	"io"
 	"reflect"
 )
@@ -54,17 +54,17 @@ func Read(source interface{}, opts ...interface{}) (t *tables.Table, err error) 
 }
 
 func Source(source interface{}, opts ...interface{}) tables.Lazy {
-	if e, ok := source.(fu.Input); ok {
+	if e, ok := source.(iokit.Input); ok {
 		return lazyread(e, opts...)
 	} else if e, ok := source.(string); ok {
-		return lazyread(fu.File(e), opts...)
+		return lazyread(iokit.File(e), opts...)
 	} else if rd, ok := source.(io.Reader); ok {
-		return lazyread(fu.Reader(rd, nil), opts...)
+		return lazyread(iokit.Reader(rd, nil), opts...)
 	}
-	return tables.SourceError(xerrors.Errorf("csv reader does not know source type %v", reflect.TypeOf(source).String()))
+	return tables.SourceError(zorros.Errorf("csv reader does not know source type %v", reflect.TypeOf(source).String()))
 }
 
-func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
+func lazyread(source iokit.Input, opts ...interface{}) tables.Lazy {
 	return func() lazy.Stream {
 		rd, err := source.Open()
 		if err != nil {
@@ -108,7 +108,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 			}
 		}()
 
-		wc := lazy.WaitCounter{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
 		return func(index uint64) (reflect.Value, error) {
 			if index == lazy.STOP {
 				wc.Stop()
@@ -128,7 +128,7 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 						err = nil
 					}
 				} else {
-					output := mlutil.Struct{names, make([]reflect.Value, width), mlutil.Bits{}}
+					output := fu.Struct{names, make([]reflect.Value, width), fu.Bits{}}
 					for i, v := range l.vals {
 						na := false
 						if na, err = fm[i].Convert(v, &output.Columns[fm[i].field], fm[i].index, fm[i].width); err != nil {
@@ -168,13 +168,13 @@ func lazyread(source fu.Input, opts ...interface{}) tables.Lazy {
 				csv.Comma('|'),
 				csv.Column("feature_1").As("Feature1"))
 */
-func Write(t *tables.Table, dest fu.Output, opts ...interface{}) (err error) {
+func Write(t *tables.Table, dest iokit.Output, opts ...interface{}) (err error) {
 	return t.Lazy().Drain(Sink(dest, opts...))
 }
 
-func Sink(dest fu.Output, opts ...interface{}) tables.Sink {
+func Sink(dest iokit.Output, opts ...interface{}) tables.Sink {
 	var err error
-	f := fu.Whole(nil)
+	f := iokit.Whole(nil)
 	if f, err = dest.Create(); err != nil {
 		return tables.SinkError(err)
 	}
@@ -191,7 +191,7 @@ func Sink(dest fu.Output, opts ...interface{}) tables.Sink {
 			f.End()
 			return
 		}
-		lr := v.Interface().(mlutil.Struct)
+		lr := v.Interface().(fu.Struct)
 		if !hasHeader {
 			if fm, names, err = mapFields(lr.Names, opts); err != nil {
 				return

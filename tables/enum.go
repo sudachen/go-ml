@@ -2,8 +2,7 @@ package tables
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"golang.org/x/xerrors"
 	"reflect"
 	"sync"
@@ -110,7 +109,7 @@ type IntegerEnumerator struct {
 }
 
 func (ce IntegerEnumerator) Type() reflect.Type {
-	return mlutil.Int
+	return fu.Int
 }
 
 func (ce IntegerEnumerator) Convert(v string, value *reflect.Value, _, _ int) (bool, error) {
@@ -144,7 +143,7 @@ func (ce IntegerEnumerator) Format(x reflect.Value, na bool) string {
 type Float32Enumerator struct{ IntegerEnumerator }
 
 func (ce Float32Enumerator) Type() reflect.Type {
-	return mlutil.Float32
+	return fu.Float32
 }
 
 func (ce Float32Enumerator) Convert(v string, value *reflect.Value, _, _ int) (na bool, err error) {
@@ -158,7 +157,7 @@ func (ce Float32Enumerator) Convert(v string, value *reflect.Value, _, _ int) (n
 type TextEnumerator struct{ Enumerator }
 
 func (ce TextEnumerator) Type() reflect.Type {
-	return mlutil.String
+	return fu.String
 }
 
 func (ce TextEnumerator) Convert(v string, value *reflect.Value, _, _ int) (bool, error) {

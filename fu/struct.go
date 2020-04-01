@@ -1,9 +1,7 @@
-package mlutil
+package fu
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
 	"golang.org/x/xerrors"
 	"reflect"
 	"strings"
@@ -23,7 +21,7 @@ func (lr Struct) String() string {
 		if lr.Columns[i].IsValid() {
 			v = lr.Columns[i].Interface()
 		}
-		r[i] = fmt.Sprintf("%v:%v", n, fu.Ife(lr.Na.Bit(i), "N/A", v))
+		r[i] = fmt.Sprintf("%v:%v", n, Ife(lr.Na.Bit(i), "N/A", v))
 	}
 	return "Struct{" + strings.Join(r, ",") + "}"
 }
@@ -42,7 +40,7 @@ func (lrx Struct) With(lr Struct) (r Struct) {
 	extra := 0
 	ndx := make([]int, len(lr.Names))
 	for i, n := range lr.Names {
-		j := fu.IndexOf(n, lrx.Names)
+		j := IndexOf(n, lrx.Names)
 		ndx[i] = j
 		if j < 0 {
 			extra++
@@ -83,7 +81,7 @@ var uwrpMu = sync.Mutex{}
 
 func Unwrapper(v reflect.Type) func(lr Struct) reflect.Value {
 	var indecies [][]int
-	inif := lazy.AtomicFlag{0}
+	inif := AtomicFlag{0}
 	return func(lr Struct) reflect.Value {
 		if !inif.State() {
 			uwrpMu.Lock()
@@ -146,7 +144,7 @@ func Transformer(rt reflect.Type) func(reflect.Value, reflect.Value) reflect.Val
 		names  []string
 		update []int
 	)
-	inif := lazy.AtomicFlag{0}
+	inif := AtomicFlag{0}
 	return func(v reflect.Value, olr reflect.Value) reflect.Value {
 		lrx := olr.Interface().(Struct)
 		if !inif.State() {
@@ -161,7 +159,7 @@ func Transformer(rt reflect.Type) func(reflect.Value, reflect.Value) reflect.Val
 				L := rt.NumField()
 				for i := 0; i < L; i++ {
 					n := rt.Field(i).Name
-					if j := fu.IndexOf(n, names); j < 0 {
+					if j := IndexOf(n, names); j < 0 {
 						names = append(names, n)
 						update = append(update, i)
 					} else {
@@ -203,7 +201,7 @@ func MakeStruct(names []string, vals ...interface{}) Struct {
 }
 
 func (lr Struct) Set(c string, val reflect.Value) Struct {
-	cj := fu.IndexOf(c, lr.Names)
+	cj := IndexOf(c, lr.Names)
 	lr = lr.Copy(cj + 1)
 	if cj < 0 {
 		lr.Names = append(lr.Names, c)
@@ -216,7 +214,7 @@ func (lr Struct) Set(c string, val reflect.Value) Struct {
 }
 
 func (lr Struct) Index(c string) Cell {
-	j := fu.IndexOf(c, lr.Names)
+	j := IndexOf(c, lr.Names)
 	return Cell{lr.Columns[j]}
 }
 

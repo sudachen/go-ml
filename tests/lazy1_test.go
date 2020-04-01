@@ -2,7 +2,8 @@ package tests
 
 import (
 	"bytes"
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables/csv"
 	"github.com/sudachen/go-ml/tables/rdb"
 	"gotest.tools/assert"
@@ -16,7 +17,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 12,9,10,11,12
 `
 
-	z := csv.Source(fu.StringIO(CSV)).
+	z := csv.Source(iokit.StringIO(CSV)).
 		Map(func(x struct {
 			Id string    `id`
 			F  []float64 `f*`
@@ -83,7 +84,7 @@ func Test_LazyCsvRdb1(t *testing.T) {
 			Id             string
 			F1, F2, F3, F4 float64
 		}{}).
-		Drain(csv.Sink(fu.Writer(&bf),
+		Drain(csv.Sink(iokit.Writer(&bf),
 			csv.Column("Id").As("id"),
 			csv.Column("F*").Round(2).As("f*")))
 

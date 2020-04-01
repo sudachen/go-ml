@@ -1,4 +1,4 @@
-package mlutil
+package fu
 
 import (
 	"fmt"

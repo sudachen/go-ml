@@ -1,14 +1,18 @@
 package iris
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/lazy"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/tables/csv"
 )
 
-var dataset = fu.External("https://datahub.io/machine-learning/iris/r/iris.csv",
-	fu.Cached("go-ml/dataset/iris/iris.csv"))
+func source(x string) iokit.Input {
+	const base = "https://datahub.io/machine-learning/iris/r/"
+	return iokit.Url(base+x, iokit.Cache("go-ml/dataset/iris/"+x))
+}
+
+var dataset = source("iris.csv")
 
 var Data tables.Lazy = func() lazy.Stream {
 	var cls = tables.Enumset{}

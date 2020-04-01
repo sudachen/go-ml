@@ -2,8 +2,7 @@ package tables
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"strings"
 )
 
@@ -46,7 +45,7 @@ func (t *Table) Display(from, to int) string {
 		}
 		u[0] = ln
 		for j := range w[1:] {
-			ws := mlutil.Cell{t.raw.Columns[j].Index(k + from)}.String()
+			ws := fu.Cell{t.raw.Columns[j].Index(k + from)}.String()
 			if len(ws) > w[j+1] {
 				w[j+1] = len(ws)
 			}

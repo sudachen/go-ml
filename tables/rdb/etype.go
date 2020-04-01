@@ -3,9 +3,8 @@ package rdb
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 )
 
@@ -32,7 +31,7 @@ func Describe(names []string, opts []interface{}) (func(string) (string, string,
 	for _, o := range opts {
 		if sto, ok := o.(SqlTypeOpt); ok {
 			v, ctp, c, cpk := sto(drv)
-			starsub := mlutil.Starsub(v, c)
+			starsub := fu.Starsub(v, c)
 			exists := false
 			for _, n := range names {
 				if _, ok := m[n]; !ok {
@@ -47,7 +46,7 @@ func Describe(names []string, opts []interface{}) (func(string) (string, string,
 				}
 			}
 			if !exists {
-				return nil, xerrors.Errorf("field %v does not exist in table/query file", v)
+				return nil, zorros.Errorf("field %v does not exist in table/query file", v)
 			}
 		}
 	}
@@ -191,7 +190,7 @@ func (s *SqlSmall) Value() (r reflect.Value, ok bool) {
 }
 
 func (s *SqlSmall) Reflect() reflect.Type {
-	return mlutil.Int16
+	return fu.Int16
 }
 
 type SqlInteger struct {
@@ -207,7 +206,7 @@ func (s *SqlInteger) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlInteger) Reflect() reflect.Type {
-	return mlutil.Int
+	return fu.Int
 }
 
 type SqlBigint struct {
@@ -223,7 +222,7 @@ func (s *SqlBigint) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlBigint) Reflect() reflect.Type {
-	return mlutil.Int64
+	return fu.Int64
 }
 
 type SqlBool struct {
@@ -239,7 +238,7 @@ func (s *SqlBool) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlBool) Reflect() reflect.Type {
-	return mlutil.Bool
+	return fu.Bool
 }
 
 type SqlString struct {
@@ -255,7 +254,7 @@ func (s *SqlString) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlString) Reflect() reflect.Type {
-	return mlutil.String
+	return fu.String
 }
 
 type SqlFloat struct {
@@ -271,7 +270,7 @@ func (s *SqlFloat) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlFloat) Reflect() reflect.Type {
-	return mlutil.Float32
+	return fu.Float32
 }
 
 type SqlDouble struct {
@@ -287,7 +286,7 @@ func (s *SqlDouble) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlDouble) Reflect() reflect.Type {
-	return mlutil.Float64
+	return fu.Float64
 }
 
 type SqlTimestamp struct {
@@ -299,7 +298,7 @@ func (s *SqlTimestamp) Value() (reflect.Value, bool) {
 }
 
 func (s *SqlTimestamp) Reflect() reflect.Type {
-	return mlutil.Ts
+	return fu.Ts
 }
 
 func (s *SqlTimestamp) Scan(value interface{}) error {

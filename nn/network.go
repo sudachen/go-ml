@@ -1,7 +1,7 @@
 package nn
 
 import (
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/nn/mx"
 	"time"
 )
@@ -32,7 +32,7 @@ func New(context mx.Context, nn Block, inputdim mx.Dimension, loss mx.Loss, batc
 	return network
 }
 
-func Load(context mx.Context, symbol, params fu.Input, batchSize int) (*Network, error) {
+func Load(context mx.Context, symbol, params iokit.Input, batchSize int) (*Network, error) {
 	sym, inputdim, err := LoadSymbol(symbol)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func Load(context mx.Context, symbol, params fu.Input, batchSize int) (*Network,
 	return network, nil
 }
 
-func Inherit(context mx.Context, nn Block, inputdim mx.Dimension, params fu.Input, batchSize int, seed int) (*Network, error) {
+func Inherit(context mx.Context, nn Block, inputdim mx.Dimension, params iokit.Input, batchSize int, seed int) (*Network, error) {
 	symbol := Combine(nn)
 	network := &Network{
 		Graph:     mx.Compose(context, symbol, nil, inputdim.Push(batchSize), mx.Float32),

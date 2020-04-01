@@ -1,9 +1,8 @@
 package csv
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 )
 
@@ -32,7 +31,7 @@ func (m mapper) Type() reflect.Type {
 	if m.valueType != reflect.Type(nil) {
 		return m.valueType
 	}
-	return mlutil.String
+	return fu.String
 }
 
 func (m mapper) Convert(value string, field *reflect.Value, index, width int) (na bool, err error) {
@@ -50,13 +49,13 @@ func (m mapper) Format(v reflect.Value, na bool) string {
 func mapFields(header []string, opts []interface{}) (fm []mapper, names []string, err error) {
 	fm = make([]mapper, len(header))
 	names = make([]string, 0, len(header))
-	mask := mlutil.Bits{}
+	mask := fu.Bits{}
 	for _, o := range opts {
 		if x, ok := o.(resolver); ok {
 			v := x()
 			exists := false
 			if v.group {
-				like := mlutil.Pattern(v.CsvCol)
+				like := fu.Pattern(v.CsvCol)
 				for i, n := range header {
 					if !mask.Bit(i) && like(n) {
 						v.name = v.TableCol
@@ -67,7 +66,7 @@ func mapFields(header []string, opts []interface{}) (fm []mapper, names []string
 					}
 				}
 			} else {
-				starsub := mlutil.Starsub(v.CsvCol, v.TableCol)
+				starsub := fu.Starsub(v.CsvCol, v.TableCol)
 				for i, n := range header {
 					if !mask.Bit(i) {
 						if c, ok := starsub(n); ok {
@@ -79,7 +78,7 @@ func mapFields(header []string, opts []interface{}) (fm []mapper, names []string
 				}
 			}
 			if !exists {
-				return nil, nil, xerrors.Errorf("field %v does not exist in CSV file", v.CsvCol)
+				return nil, nil, zorros.Errorf("field %v does not exist in CSV file", v.CsvCol)
 			}
 		}
 	}

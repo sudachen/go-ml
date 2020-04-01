@@ -8,8 +8,8 @@ import "C"
 import (
 	"fmt"
 	"github.com/sudachen/go-dl/dl"
-	"github.com/sudachen/go-ml/logger"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-zorros/zlog"
 	"runtime"
 	"unsafe"
 )
@@ -128,7 +128,7 @@ func init() {
 	}
 
 	for i := 0; i < int(ascn); i++ {
-		a := *(*C.AtomicSymbolCreator)(mlutil.Index(i, ascv))
+		a := *(*C.AtomicSymbolCreator)(fu.Index(i, ascv))
 		var n *C.char
 		if e := C.MXSymbolGetAtomicSymbolName(a, &n); e != 0 {
 			panic(fmt.Sprintf("failed to gather name for symbol %x", a))
@@ -147,14 +147,14 @@ func init() {
 	}
 
 	if notInit {
-		logger.Infof("available operators:")
+		zlog.Infof("available operators:")
 		for i := 0; i < int(ascn); i++ {
-			a := *(*C.AtomicSymbolCreator)(mlutil.Index(i, ascv))
+			a := *(*C.AtomicSymbolCreator)(fu.Index(i, ascv))
 			var n *C.char
 			if e := C.MXSymbolGetAtomicSymbolName(a, &n); e != 0 {
 				panic(fmt.Sprintf("failed to gather name for symbol %x", a))
 			}
-			logger.Info(C.GoString(n))
+			zlog.Info(C.GoString(n))
 		}
 		panic("not initialized")
 	}
@@ -314,7 +314,7 @@ func ListNames(handle SymbolHandle, kind int) []string {
 	}
 
 	name_at := func(i int) string {
-		return C.GoString(*(**C.char)(mlutil.Index(i, out_ns)))
+		return C.GoString(*(**C.char)(fu.Index(i, out_ns)))
 	}
 
 	r = make([]string, int(out_nn))
@@ -379,12 +379,12 @@ func InferShapes(handle SymbolHandle, with map[string][]int, selector int) map[s
 	}
 
 	shape_at := func(i int, d *C.uint, s **C.uint) []int {
-		n := int(*(*C.uint)(mlutil.Index(i, d)))
+		n := int(*(*C.uint)(fu.Index(i, d)))
 		r := make([]int, n)
-		ps := *(**C.uint)(mlutil.Index(i, s))
+		ps := *(**C.uint)(fu.Index(i, s))
 
 		for j := 0; j < n; j++ {
-			r[j] = int(*(*C.int)(mlutil.Index(j, ps)))
+			r[j] = int(*(*C.int)(fu.Index(j, ps)))
 		}
 
 		return r
@@ -498,7 +498,7 @@ func FillInfo(nfo *NDArrayInfo) {
 	}
 	nfo.Dim = make([]int, int(dn))
 	for i := range nfo.Dim {
-		nfo.Dim[i] = int(*(*C.int)(mlutil.Index(i, ds)))
+		nfo.Dim[i] = int(*(*C.int)(fu.Index(i, ds)))
 	}
 }
 
@@ -513,7 +513,7 @@ func GetOutputs(exec ExecutorHandle) []NDArrayInfo {
 	}
 	r := make([]NDArrayInfo, int(n))
 	for i := range r {
-		r[i].Handle = *(*NDArrayHandle)(mlutil.Index(i, a))
+		r[i].Handle = *(*NDArrayHandle)(fu.Index(i, a))
 		FillInfo(&r[i])
 	}
 	return r

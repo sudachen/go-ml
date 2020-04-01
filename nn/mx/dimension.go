@@ -2,7 +2,7 @@ package mx
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-zorros/zorros"
 	"strconv"
 	"strings"
 )
@@ -28,7 +28,7 @@ func DimensionFromString(s string) (Dimension, error) {
 	r := Dimension{}
 	if len(s) > 0 && s != "" {
 		if s[0] != '(' || s[len(s)-1] != ')' {
-			return Dimension{}, fu.Errorf("invalid dimension string")
+			return Dimension{}, zorros.Errorf("invalid dimension string")
 		}
 		s := s[1 : len(s)-1]
 		if len(s) > 0 && s != "" {
@@ -36,7 +36,7 @@ func DimensionFromString(s string) (Dimension, error) {
 			for i, n := range d {
 				v, err := strconv.ParseInt(n, 10, 32)
 				if err != nil {
-					return Dimension{}, fu.Errorf("bad dimansion value; %w", err)
+					return Dimension{}, zorros.Errorf("bad dimansion value; %w", err)
 				}
 				r.Shape[i] = int(v)
 				r.Len = i + 1

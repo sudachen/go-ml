@@ -1,8 +1,7 @@
-package mlutil
+package fu
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
 	"math"
 	"reflect"
 	"strconv"
@@ -32,7 +31,7 @@ func Nan(tp reflect.Type) reflect.Value {
 func ConvertSlice(v reflect.Value, na Bits, tp reflect.Type, nocopy ...bool) reflect.Value {
 	L := v.Len()
 	vt := v.Type().Elem()
-	if vt == tp && fu.Fnzb(nocopy...) {
+	if vt == tp && Fnzb(nocopy...) {
 		return v.Slice(0, L)
 	}
 	r := reflect.MakeSlice(reflect.SliceOf(tp), L, L)

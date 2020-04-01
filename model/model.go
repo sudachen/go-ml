@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 )
 
@@ -21,17 +22,17 @@ Metrics interface
 type Metrics interface {
 	Begin()
 	Update(result, label reflect.Value)
-	Complete() (mlutil.Struct, bool)
+	Complete() (fu.Struct, bool)
 	Copy() Metrics
 }
 
 // FatModel is fattened model (a training function of model instance bounded to a dataset)
-type FatModel func(int, fu.Output, ...Metrics) (*tables.Table, error)
+type FatModel func(int, iokit.Output, ...Metrics) (*tables.Table, error)
 
 /*
 Fit trains a fattened (Fat) model
 */
-func (f FatModel) Fit(iterations int, output fu.Output, mx ...Metrics) (*tables.Table, error) {
+func (f FatModel) Fit(iterations int, output iokit.Output, mx ...Metrics) (*tables.Table, error) {
 	iterations = fu.Maxi(1, iterations)
 	return f(iterations, output, mx...)
 }
@@ -39,10 +40,10 @@ func (f FatModel) Fit(iterations int, output fu.Output, mx ...Metrics) (*tables.
 /*
 LuckyFit trains fattened (Fat) model and trows any occurred errors as a panic
 */
-func (f FatModel) LuckyFit(iterations int, output fu.Output, mx ...Metrics) *tables.Table {
+func (f FatModel) LuckyFit(iterations int, output iokit.Output, mx ...Metrics) *tables.Table {
 	m, err := f.Fit(iterations, output, mx...)
 	if err != nil {
-		panic(fu.Panic(err))
+		panic(zorros.Panic(err))
 	}
 	return m
 }

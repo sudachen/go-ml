@@ -4,17 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/xgb/capi"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-zorros/zorros"
 	"io"
 	"unsafe"
 )
 
-func fit(rounds int, e Model, dataset model.Dataset, output fu.Output, mx ...model.Metrics) (metrics *tables.Table, err error) {
+func fit(rounds int, e Model, dataset model.Dataset, output iokit.Output, mx ...model.Metrics) (metrics *tables.Table, err error) {
 	t, err := dataset.Source.Collect()
 	if err != nil {
 		return
@@ -66,12 +66,12 @@ func fit(rounds int, e Model, dataset model.Dataset, output fu.Output, mx ...mod
 	if e.Function == Softprob || e.Function == Softmax {
 		x := int(fu.Maxr(fu.Maxr(0, train.Labels...), test.Labels...))
 		if x < 0 {
-			panic(xerrors.Errorf("labels don't contain enough classes or label values is incorrect"))
+			panic(zorros.Errorf("labels don't contain enough classes or label values is incorrect"))
 		}
 		capi.SetParam(xgb.handle, "num_class", fmt.Sprint(x+1))
 	}
 
-	perflog := []*mlutil.Struct{}
+	perflog := []*fu.Struct{}
 	var testLabels, trainLabels *tables.Column
 	if len(mx) > 0 {
 		testLabels = test.AsLabelColumn()
@@ -100,7 +100,7 @@ func fit(rounds int, e Model, dataset model.Dataset, output fu.Output, mx ...mod
 	return
 }
 
-func (xgb *xgbinstance) evalMetrics(i int, testSubset bool, m unsafe.Pointer, labels *tables.Column, log *[]*mlutil.Struct, mr model.Measurer) bool {
+func (xgb *xgbinstance) evalMetrics(i int, testSubset bool, m unsafe.Pointer, labels *tables.Column, log *[]*fu.Struct, mr model.Measurer) bool {
 	y := capi.Predict(xgb.handle, m, 0)
 	pred := tables.Matrix{
 		Features:    y,

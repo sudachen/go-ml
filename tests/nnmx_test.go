@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/nn/mx"
 	"gotest.tools/assert"
 	"reflect"
@@ -9,7 +9,7 @@ import (
 )
 
 var test_on_GPU = mx.GpuCount() > 0 && false
-var RequiredMxVersion = mlutil.MakeVersion(1, 5, 0)
+var RequiredMxVersion = fu.MakeVersion(1, 5, 0)
 
 func Test_0info(t *testing.T) {
 	t.Logf("go-dlnn version %v", mx.Version)

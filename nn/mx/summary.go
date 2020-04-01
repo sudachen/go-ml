@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/sudachen/go-ml/logger"
 	"github.com/sudachen/go-ml/nn/mx/capi"
+	"github.com/sudachen/go-zorros/zlog"
 	"strings"
 )
 
@@ -159,7 +159,7 @@ func (g *Graph) SummaryOut(withLoss bool, out func(string)) {
 }
 
 func (g *Graph) LogSummary(withLoss bool) {
-	g.SummaryOut(withLoss, func(s string) { logger.Info(s) })
+	g.SummaryOut(withLoss, func(s string) { zlog.Info(s) })
 }
 
 func (g *Graph) PrintSummary(withLoss bool) {

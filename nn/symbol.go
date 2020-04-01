@@ -1,7 +1,7 @@
 package nn
 
 import (
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/nn/mx"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -20,8 +20,8 @@ func resetSymbolId(first int) {
 	_symbolId = first
 }
 
-func (network *Network) SaveSymbol(output fu.Output) (err error) {
-	var wr fu.Whole
+func (network *Network) SaveSymbol(output iokit.Output) (err error) {
+	var wr iokit.Whole
 	if wr, err = output.Create(); err != nil {
 		return
 	}
@@ -40,7 +40,7 @@ func (network *Network) SaveSymbol(output fu.Output) (err error) {
 	return wr.Commit()
 }
 
-func LoadSymbol(input fu.Input) (symbolic *mx.Symbol, inputdim mx.Dimension, err error) {
+func LoadSymbol(input iokit.Input) (symbolic *mx.Symbol, inputdim mx.Dimension, err error) {
 	var rd io.ReadCloser
 	if rd, err = input.Open(); err != nil {
 		return

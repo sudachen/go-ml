@@ -14,7 +14,7 @@ limitations under the License.
 // Package logger offers simple cross platform logging for Windows and Linux.
 // Available logging endpoints are event log (Windows), syslog (Linux), and
 // an io.Writer.
-package logger
+package zlog
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"sync"
-	"time"
 )
 
 type severity int
@@ -46,7 +45,7 @@ const (
 
 const (
 	flags    = log.Ldate | log.Lmicroseconds | log.Lshortfile
-	initText = "ERROR: Logging before logger.Init.\n"
+	initText = "? "
 )
 
 var (
@@ -76,13 +75,34 @@ func init() {
 // logger.
 // If the logFile passed in also satisfies io.Closer, logFile.Close will be called
 // when closing the logger.
-func Init(name string, verbose, _ bool, logFile io.Writer) *Logger {
+
+type Config struct {
+	Name      string    // log name
+	Verbose   bool      // verbose log to stdout/stderr
+	LogWriter io.Writer // writer to write log
+	LogFile   string    // filename to write log
+	SentryDsn string    // log to sentry
+	Exclusive bool      // do not use as default logger
+}
+
+func (cfg Config) Init() *Logger {
+	logw := io.Writer(nil)
+	if cfg.LogWriter != nil {
+		logw = cfg.LogWriter
+	} else if cfg.LogFile != "" {
+		f, err := os.Create(cfg.LogFile)
+		if err != nil {
+			panic(err)
+		}
+		logw = f
+	}
+
 	makeLog := func(level severity, w ...io.Writer) *log.Logger {
 		var tag string
 		var a []io.Writer
 		var v io.Writer
-		if logFile != nil {
-			a = append(a, logFile)
+		if logw != nil {
+			a = append(a, logw)
 		}
 		switch level {
 		case sInfo:
@@ -98,7 +118,7 @@ func Init(name string, verbose, _ bool, logFile io.Writer) *Logger {
 			v = os.Stderr
 			tag = tagFatal
 		}
-		if verbose {
+		if cfg.Verbose {
 			a = append(a, v)
 		}
 		a = append(a, w...)
@@ -113,8 +133,8 @@ func Init(name string, verbose, _ bool, logFile io.Writer) *Logger {
 	}
 
 	l.closers = append(l.closers, sentryFatalLog)
-	if logFile != nil {
-		if c, ok := logFile.(io.Closer); ok && c != nil {
+	if logw != nil {
+		if c, ok := logw.(io.Closer); ok && c != nil {
 			l.closers = append(l.closers, c)
 		}
 	}
@@ -123,8 +143,15 @@ func Init(name string, verbose, _ bool, logFile io.Writer) *Logger {
 
 	logLock.Lock()
 	defer logLock.Unlock()
-	if !defaultLogger.initialized {
+	if !cfg.Exclusive && !defaultLogger.initialized {
 		defaultLogger = &l
+	}
+
+	if !cfg.Exclusive && cfg.SentryDsn != "" {
+		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDsn})
+		if err != nil {
+			l.Warningf("failed to connect Sentry: %v", err.Error())
+		}
 	}
 
 	return &l
@@ -178,6 +205,10 @@ func (l *Logger) Close() {
 		if err := c.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to close log %v: %v\n", c, err)
 		}
+	}
+
+	if l == defaultLogger {
+		initialize()
 	}
 }
 
@@ -398,37 +429,4 @@ func Fatalf(format string, v ...interface{}) {
 	defaultLogger.output(sFatal, 0, fmt.Sprintf(format, v...))
 	defaultLogger.Close()
 	os.Exit(1)
-}
-
-const flashTimeout = 3 * time.Second
-
-var sentryFatalLog = &snio{sentry.LevelFatal}
-var sentryErrorLog = &snio{sentry.LevelError}
-var sentryWarnLog = &snio{sentry.LevelWarning}
-var sentryInfoLog = &snio{sentry.LevelInfo}
-
-type snio struct {
-	level sentry.Level
-}
-
-func sentryOutput(p []byte, level sentry.Level) {
-	sentry.WithScope(func(scope *sentry.Scope) {
-		scope.SetLevel(level)
-		sentry.CaptureMessage(string(p))
-	})
-	if level == sentry.LevelFatal {
-		sentry.Flush(flashTimeout)
-	}
-}
-
-func (sn *snio) Write(p []byte) (n int, err error) {
-	if sentry.CurrentHub().Client() != nil {
-		sentryOutput(p, sn.level)
-	}
-	return 0, nil
-}
-
-func (sn *snio) Close() error {
-	sentry.Flush(flashTimeout)
-	return nil
 }

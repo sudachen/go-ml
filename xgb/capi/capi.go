@@ -9,13 +9,13 @@ import "C"
 import (
 	"fmt"
 	"github.com/sudachen/go-dl/dl"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"golang.org/x/xerrors"
 	"runtime"
 	"unsafe"
 )
 
-var LibVersion mlutil.VersionType
+var LibVersion fu.VersionType
 
 func init() {
 	var so dl.SO
@@ -75,7 +75,7 @@ func init() {
 
 	var major, minor, patch C.int
 	C.XGBoostVersion(&major, &minor, &patch)
-	LibVersion = mlutil.MakeVersion(int(major), int(minor), int(patch))
+	LibVersion = fu.MakeVersion(int(major), int(minor), int(patch))
 }
 
 func Create() unsafe.Pointer {
@@ -272,7 +272,7 @@ func DumpModel(b unsafe.Pointer) (r []string) {
 	}
 	r = make([]string, int(ln))
 	for i := range r {
-		r[i] = C.GoString(*(**C.char)(mlutil.Index(i, (**C.char)(dtp))))
+		r[i] = C.GoString(*(**C.char)(fu.Index(i, (**C.char)(dtp))))
 	}
 	return
 }

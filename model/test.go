@@ -1,9 +1,9 @@
 package model
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 )
 
@@ -14,7 +14,7 @@ func Evaluate(source tables.AnyData, label string, m PredictionModel, batchsize 
 			if v.Kind() == reflect.Bool {
 				if v.Bool() {
 					metrics, _ := mr.Complete(0, "test")
-					t = tables.New([]*mlutil.Struct{&metrics})
+					t = tables.New([]*fu.Struct{&metrics})
 				}
 			} else {
 				tr := v.Interface().(*tables.Table)
@@ -28,7 +28,7 @@ func Evaluate(source tables.AnyData, label string, m PredictionModel, batchsize 
 func LuckyEvaluate(source tables.AnyData, label string, m PredictionModel, batchsize int, mx ...Metrics) *tables.Table {
 	t, err := Evaluate(source, label, m, batchsize, mx...)
 	if err != nil {
-		panic(fu.Panic(err))
+		panic(zorros.Panic(err))
 	}
 	return t
 }

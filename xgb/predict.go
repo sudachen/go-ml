@@ -1,7 +1,7 @@
 package xgb
 
 import (
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/xgb/capi"
 	"io"
@@ -12,7 +12,7 @@ import (
 type PredictionModel struct {
 	features []string
 	predicts string
-	source   fu.Input
+	source   iokit.Input
 }
 
 func (x *xgbinstance) MapFeatures(t *tables.Table) (*tables.Table, error) {

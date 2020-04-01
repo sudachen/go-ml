@@ -1,8 +1,8 @@
 package nn
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"gopkg.in/yaml.v3"
@@ -10,7 +10,7 @@ import (
 	"reflect"
 )
 
-func fit(iteratins int, e Model, dataset model.Dataset, output fu.Output, mx ...model.Metrics) (metrics *tables.Table, err error) {
+func fit(iteratins int, e Model, dataset model.Dataset, output iokit.Output, mx ...model.Metrics) (metrics *tables.Table, err error) {
 	t, err := dataset.Source.Lazy().First(1).Collect()
 	if err != nil {
 		return
@@ -23,7 +23,7 @@ func fit(iteratins int, e Model, dataset model.Dataset, output fu.Output, mx ...
 	full := dataset.Source.Lazy().Batch(e.BatchSize).Parallel()
 	trainmr := model.Measurer(mx)
 	testmr := trainmr.Copy()
-	mrlines := []mlutil.Struct{}
+	mrlines := []fu.Struct{}
 	out := make([]float32, network.Graph.Output.Dim().Total())
 
 	for i := 0; i < iteratins; i++ {
@@ -58,7 +58,7 @@ func fit(iteratins int, e Model, dataset model.Dataset, output fu.Output, mx ...
 				resultCol := tables.MatrixColumn(out, e.BatchSize)
 				labelCol := t.Col(dataset.Label)
 				if dataset.Test != "" {
-					for i, c := range t.Col(dataset.Test).ExtractAs(mlutil.Bool, true).([]bool) {
+					for i, c := range t.Col(dataset.Test).ExtractAs(fu.Bool, true).([]bool) {
 						if c {
 							testmr.Update(resultCol.Value(i), labelCol.Value(i))
 						} else {
@@ -104,12 +104,12 @@ func (mm mnemosyne) Memorize(c *model.CollectionWriter) (err error) {
 		return
 	}
 	if err = c.AddLzma2("params.bin.xz", func(wr io.Writer) (e error) {
-		return mm.network.SaveParams(fu.Writer(wr))
+		return mm.network.SaveParams(iokit.Writer(wr))
 	}); err != nil {
 		return
 	}
 	if err = c.AddLzma2("symbol.yaml.xz", func(wr io.Writer) (e error) {
-		return mm.network.SaveSymbol(fu.Writer(wr))
+		return mm.network.SaveSymbol(iokit.Writer(wr))
 	}); err != nil {
 		return
 	}

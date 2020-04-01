@@ -1,8 +1,7 @@
-package mlutil
+package fu
 
 import (
 	"fmt"
-	"github.com/sudachen/go-foo/lazy"
 	"strings"
 )
 
@@ -15,7 +14,7 @@ import (
 */
 
 func makesubst(subst string) func(string) string {
-	counter := lazy.AtomicCounter{1}
+	counter := AtomicCounter{1}
 	j := strings.Index(subst, "*")
 	if j < 0 {
 		return func(v string) string {

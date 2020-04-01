@@ -1,9 +1,9 @@
 package tables
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 )
 
@@ -40,13 +40,13 @@ func (zf Lazy) Map(f interface{}) Lazy {
 		} else if vf.Kind() != reflect.Struct {
 			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Map")
 		}
-		unwrap := mlutil.Unwrapper(ir)
-		wrap := mlutil.Wrapper(or)
+		unwrap := fu.Unwrapper(ir)
+		wrap := fu.Wrapper(or)
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(mlutil.Struct))
+			x := unwrap(v.Interface().(fu.Struct))
 			if vf.Kind() == reflect.Func {
 				x = vf.Call([]reflect.Value{x})[0]
 			}
@@ -67,13 +67,13 @@ func (zf Lazy) Transform(f interface{}) Lazy {
 		} else if vf.Kind() != reflect.Struct {
 			panic("only func(struct{...})struct{...} and struct{...} is allowed as an argument of lazy.Transform")
 		}
-		unwrap := mlutil.Unwrapper(ir)
-		transform := mlutil.Transformer(or)
+		unwrap := fu.Unwrapper(ir)
+		transform := fu.Transformer(or)
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(mlutil.Struct))
+			x := unwrap(v.Interface().(fu.Struct))
 			if vf.Kind() == reflect.Func {
 				x = vf.Call([]reflect.Value{x})[0]
 			}
@@ -87,12 +87,12 @@ func (zf Lazy) Filter(f interface{}) Lazy {
 		z := zf()
 		vf := reflect.ValueOf(f)
 		vt := vf.Type()
-		unwrap := mlutil.Unwrapper(vt.In(0))
+		unwrap := fu.Unwrapper(vt.In(0))
 		return func(index uint64) (v reflect.Value, err error) {
 			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
 				return v, err
 			}
-			x := unwrap(v.Interface().(mlutil.Struct))
+			x := unwrap(v.Interface().(fu.Struct))
 			if vf.Call([]reflect.Value{x})[0].Bool() {
 				return
 			}
@@ -116,14 +116,14 @@ func (zf Lazy) Collect() (t *Table, err error) {
 	length := 0
 	columns := []reflect.Value{}
 	names := []string{}
-	na := []mlutil.Bits{}
+	na := []fu.Bits{}
 	err = zf.Drain(func(v reflect.Value) error {
 		if v.Kind() != reflect.Bool {
-			lr := v.Interface().(mlutil.Struct)
+			lr := v.Interface().(fu.Struct)
 			if length == 0 {
 				names = lr.Names
 				columns = make([]reflect.Value, len(names))
-				na = make([]mlutil.Bits, len(names))
+				na = make([]fu.Bits, len(names))
 				for i, x := range lr.Columns {
 					columns[i] = reflect.MakeSlice(reflect.SliceOf(x.Type()), 0, iniCollectLength)
 				}
@@ -145,7 +145,7 @@ func (zf Lazy) Collect() (t *Table, err error) {
 func (zf Lazy) LuckyCollect() *Table {
 	t, err := zf.Collect()
 	if err != nil {
-		panic(fu.Panic(err))
+		panic(zorros.Panic(err))
 	}
 	return t
 }
@@ -156,7 +156,7 @@ func (zf Lazy) Drain(sink Sink) (err error) {
 
 func (zf Lazy) LuckySink(sink Sink) {
 	if err := zf.Drain(sink); err != nil {
-		panic(fu.Panic(err))
+		panic(zorros.Panic(err))
 	}
 }
 
@@ -167,7 +167,7 @@ func (zf Lazy) Count() (int, error) {
 func (zf Lazy) LuckyCount() int {
 	c, err := zf.Count()
 	if err != nil {
-		panic(fu.Panic(err))
+		panic(zorros.Panic(err))
 	}
 	return c
 }
@@ -184,7 +184,7 @@ func (zf Lazy) RandomFlag(c string, seed int, prob float64) Lazy {
 	return func() lazy.Stream {
 		z := zf()
 		nr := fu.NaiveRandom{Value: uint32(seed)}
-		wc := lazy.WaitCounter{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
 			if index == lazy.STOP {
@@ -192,7 +192,7 @@ func (zf Lazy) RandomFlag(c string, seed int, prob float64) Lazy {
 			}
 			if wc.Wait(index) {
 				if err == nil && v.Kind() != reflect.Bool {
-					lr := v.Interface().(mlutil.Struct)
+					lr := v.Interface().(fu.Struct)
 					p := nr.Float()
 					val := reflect.ValueOf(p < prob)
 					v = reflect.ValueOf(lr.Set(c, val))
@@ -212,7 +212,7 @@ func (zf Lazy) Round(prec int) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lrx := v.Interface().(mlutil.Struct)
+			lrx := v.Interface().(fu.Struct)
 			lr := lrx.Copy(0)
 			for i, c := range lr.Columns {
 				switch c.Kind() {
@@ -235,11 +235,11 @@ func (zf Lazy) IfFlag(c string) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lr := v.Interface().(mlutil.Struct)
+			lr := v.Interface().(fu.Struct)
 			if j := fu.IndexOf(c, lr.Names); j >= 0 && lr.Columns[j].Bool() {
 				return
 			}
-			return mlutil.True, nil
+			return fu.True, nil
 		}
 	}
 }
@@ -252,11 +252,11 @@ func (zf Lazy) IfNotFlag(c string) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lr := v.Interface().(mlutil.Struct)
+			lr := v.Interface().(fu.Struct)
 			if j := fu.IndexOf(c, lr.Names); j < 0 || !lr.Columns[j].Bool() {
 				return
 			}
-			return mlutil.True, nil
+			return fu.True, nil
 		}
 	}
 }
@@ -269,8 +269,8 @@ func (zf Lazy) True(c string) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lr := v.Interface().(mlutil.Struct)
-			return reflect.ValueOf(lr.Set(c, mlutil.True)), nil
+			lr := v.Interface().(fu.Struct)
+			return reflect.ValueOf(lr.Set(c, fu.True)), nil
 		}
 	}
 }
@@ -283,16 +283,16 @@ func (zf Lazy) False(c string) Lazy {
 			if err != nil || v.Kind() == reflect.Bool {
 				return
 			}
-			lr := v.Interface().(mlutil.Struct)
-			return reflect.ValueOf(lr.Set(c, mlutil.False)), nil
+			lr := v.Interface().(fu.Struct)
+			return reflect.ValueOf(lr.Set(c, fu.False)), nil
 		}
 	}
 }
 
 func (zf Lazy) Chain(zx Lazy) Lazy {
 	return Lazy(lazy.Source(zf).Chain(lazy.Source(zx), func(a, b reflect.Value) (eqt bool) {
-		if lr, ok := a.Interface().(mlutil.Struct); ok {
-			if lrx, ok := b.Interface().(mlutil.Struct); ok {
+		if lr, ok := a.Interface().(fu.Struct); ok {
+			if lrx, ok := b.Interface().(fu.Struct); ok {
 				if len(lrx.Names) != len(lr.Names) {
 					for i, n := range lrx.Names {
 						if n != lr.Names[i] || lrx.Columns[i].Type() != lr.Columns[i].Type() {

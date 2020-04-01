@@ -1,14 +1,13 @@
 package tables
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"reflect"
 )
 
 type Column struct {
 	column reflect.Value
-	na     mlutil.Bits
+	na     fu.Bits
 }
 
 /*
@@ -19,7 +18,7 @@ func Col(a interface{}) *Column {
 	if v.Kind() != reflect.Slice {
 		panic("anly slice is allowed as an argument")
 	}
-	return &Column{v, mlutil.Bits{}}
+	return &Column{v, fu.Bits{}}
 }
 
 /*
@@ -44,7 +43,7 @@ Strings extracts column' values as []string
 	t.Col("Name").Strings() -> {"Ivanov","Petrow"}
 */
 func (c *Column) Strings() []string {
-	return c.ExtractAs(mlutil.String).([]string)
+	return c.ExtractAs(fu.String).([]string)
 }
 
 /*
@@ -160,7 +159,7 @@ Ints extracts column' values as []int
 	t.Col("Age").Ints() -> {32,44}
 */
 func (c *Column) Ints() []int {
-	return c.ExtractAs(mlutil.Int).([]int)
+	return c.ExtractAs(fu.Int).([]int)
 }
 
 /*
@@ -170,7 +169,7 @@ Ints8 extracts column' values as []int8
 	t.Col("Age").Ints8() -> {32,44}
 */
 func (c *Column) Ints8() []int8 {
-	return c.ExtractAs(mlutil.Int8).([]int8)
+	return c.ExtractAs(fu.Int8).([]int8)
 }
 
 /*
@@ -180,7 +179,7 @@ Ints16 extracts column' values as []int16
 	t.Col("Age").Ints16() -> {32,44}
 */
 func (c *Column) Ints16() []int16 {
-	return c.ExtractAs(mlutil.Int16).([]int16)
+	return c.ExtractAs(fu.Int16).([]int16)
 }
 
 /*
@@ -190,7 +189,7 @@ Ints32 extracts column' values as []int32
 	t.Col("Age").Ints32() -> {32,44}
 */
 func (c *Column) Ints32() []int32 {
-	return c.ExtractAs(mlutil.Int32).([]int32)
+	return c.ExtractAs(fu.Int32).([]int32)
 }
 
 /*
@@ -200,7 +199,7 @@ Ints64 extracts column' values as []int64
 	t.Col("Age").Ints64() -> {32,44}
 */
 func (c *Column) Ints64() []int64 {
-	return c.ExtractAs(mlutil.Int64).([]int64)
+	return c.ExtractAs(fu.Int64).([]int64)
 }
 
 /*
@@ -210,7 +209,7 @@ Uints extracts column' values as []uint
 	t.Col("Age").Uints() -> {32,44}
 */
 func (c *Column) Uints() []uint {
-	return c.ExtractAs(mlutil.Uint).([]uint)
+	return c.ExtractAs(fu.Uint).([]uint)
 }
 
 /*
@@ -220,7 +219,7 @@ Uints8 extracts column' values as []uint8
 	t.Col("Age").Uints8() -> {32,44}
 */
 func (c *Column) Uints8() []uint8 {
-	return c.ExtractAs(mlutil.Uint8).([]uint8)
+	return c.ExtractAs(fu.Uint8).([]uint8)
 }
 
 /*
@@ -230,7 +229,7 @@ Uints16 extracts column' values as []uint16
 	t.Col("Age").Uints16() -> {32,44}
 */
 func (c *Column) Uints16() []uint16 {
-	return c.ExtractAs(mlutil.Uint16).([]uint16)
+	return c.ExtractAs(fu.Uint16).([]uint16)
 }
 
 /*
@@ -240,7 +239,7 @@ Uints32 extracts column' values as []uint32
 	t.Col("Age").Uints32() -> {32,44}
 */
 func (c *Column) Uints32() []uint32 {
-	return c.ExtractAs(mlutil.Uint32).([]uint32)
+	return c.ExtractAs(fu.Uint32).([]uint32)
 }
 
 /*
@@ -250,7 +249,7 @@ Uints64 extracts column' values as []uint64
 	t.Col("Age").Uints64() -> {32,44}
 */
 func (c *Column) Uints64() []uint64 {
-	return c.ExtractAs(mlutil.Uint64).([]uint64)
+	return c.ExtractAs(fu.Uint64).([]uint64)
 }
 
 /*
@@ -280,7 +279,7 @@ Reals extracts column' values as []float32
 	t.Col("Rate").Reals() -> {1.2,1.5}
 */
 func (c *Column) Reals() []float32 {
-	return c.ExtractAs(mlutil.Float32).([]float32)
+	return c.ExtractAs(fu.Float32).([]float32)
 }
 
 /*
@@ -290,7 +289,7 @@ Floats extracts column' values as []float64
 	t.Col("Rate").Floats() -> {1.2,1.5}
 */
 func (c *Column) Floats() []float64 {
-	return c.ExtractAs(mlutil.Float64).([]float64)
+	return c.ExtractAs(fu.Float64).([]float64)
 }
 
 /*
@@ -321,7 +320,7 @@ func (c *Column) ExtractAs(tp reflect.Type, nocopy ...bool) interface{} {
 		reflect.Copy(r, c.column)
 		return r.Interface()
 	} else {
-		return mlutil.ConvertSlice(c.column, c.na, tp, nocopy...).Interface()
+		return fu.ConvertSlice(c.column, c.na, tp, nocopy...).Interface()
 	}
 }
 
@@ -380,7 +379,7 @@ func (c *Column) Unique() *Column {
 			m.SetMapIndex(x, v)
 		}
 	}
-	return &Column{r, mlutil.Bits{}}
+	return &Column{r, fu.Bits{}}
 }
 
 /*
@@ -392,8 +391,8 @@ Index returns cell with value at specified index
 	c.Float32() -> 33.0
 	c.TzeInt() -> 33
 */
-func (c *Column) Index(i int) mlutil.Cell {
-	return mlutil.Cell{c.column.Index(i)}
+func (c *Column) Index(i int) fu.Cell {
+	return fu.Cell{c.column.Index(i)}
 }
 
 func (c *Column) Value(i int) reflect.Value {
@@ -407,8 +406,8 @@ Max returns cell with max column' maximal value
 	t.Col("Age").Max().TzeInt() -> 44
 	t.Col("Rate").Max().Float32() -> 1.5
 */
-func (c *Column) Max() mlutil.Cell {
-	return mlutil.Cell{fu.MaxValue(c.column)}
+func (c *Column) Max() fu.Cell {
+	return fu.Cell{fu.MaxValue(c.column)}
 }
 
 /*
@@ -418,8 +417,8 @@ Min returns cell with column' minimal value
 	t.Col("Age").Min().TzeInt() -> 32
 	t.Col("Rate").Min().Float32() -> 1.2
 */
-func (c *Column) Min() mlutil.Cell {
-	return mlutil.Cell{fu.MinValue(c.column)}
+func (c *Column) Min() fu.Cell {
+	return fu.Cell{fu.MinValue(c.column)}
 }
 
 /*
@@ -445,7 +444,7 @@ func (c *Column) MinIndex() int {
 /*
 Raw returns column internals
 */
-func (c *Column) Raw() (reflect.Value, mlutil.Bits) {
+func (c *Column) Raw() (reflect.Value, fu.Bits) {
 	return c.column, c.na
 }
 

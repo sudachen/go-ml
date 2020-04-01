@@ -1,8 +1,8 @@
 package tables
 
 import (
-	"github.com/sudachen/go-foo/lazy"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/lazy"
 	"reflect"
 )
 
@@ -36,11 +36,11 @@ Batch transforms lazy stream to a batching flow
 func (zf Lazy) Batch(length int) Batch {
 	return Batch{length, func() lazy.Stream {
 		z := zf()
-		wc := lazy.WaitCounter{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
 		columns := []reflect.Value{}
-		na := []mlutil.Bits{}
+		na := []fu.Bits{}
 		names := []string{}
-		ac := lazy.AtomicCounter{Value: 0}
+		ac := fu.AtomicCounter{Value: 0}
 
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
@@ -49,7 +49,7 @@ func (zf Lazy) Batch(length int) Batch {
 				return
 			}
 
-			x := mlutil.True
+			x := fu.True
 			if wc.Wait(index) {
 				if v.Kind() == reflect.Bool {
 					if !v.Bool() {
@@ -66,7 +66,7 @@ func (zf Lazy) Batch(length int) Batch {
 					return v, nil
 				}
 
-				lr := v.Interface().(mlutil.Struct)
+				lr := v.Interface().(fu.Struct)
 				ndx := ac.PostInc()
 				n := int(ndx % uint64(length))
 
@@ -80,7 +80,7 @@ func (zf Lazy) Batch(length int) Batch {
 					for i := range columns {
 						columns[i] = reflect.MakeSlice(reflect.SliceOf(lr.Columns[i].Type()), 0, length)
 					}
-					na = make([]mlutil.Bits, width)
+					na = make([]fu.Bits, width)
 				}
 
 				for i := range lr.Names {
@@ -91,7 +91,7 @@ func (zf Lazy) Batch(length int) Batch {
 				wc.Inc()
 				return x, nil
 			}
-			return mlutil.False, nil
+			return fu.False, nil
 		}
 	}}
 }
@@ -102,12 +102,12 @@ Flat transforms batching to the normal lazy stream
 func (zf Batch) Flat() Lazy {
 	return func() lazy.Stream {
 		z := zf.Source()
-		wc := lazy.WaitCounter{Value: 0}
-		ac := lazy.AtomicCounter{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
+		ac := fu.AtomicCounter{Value: 0}
 		t := (*Table)(nil)
 		row := 0
 		return func(index uint64) (v reflect.Value, err error) {
-			v = mlutil.False
+			v = fu.False
 			if index == lazy.STOP {
 				wc.Stop()
 				return
@@ -134,7 +134,7 @@ func (zf Batch) Flat() Lazy {
 				wc.Inc()
 				return v, nil
 			}
-			return mlutil.False, nil
+			return fu.False, nil
 		}
 	}
 }
@@ -144,7 +144,7 @@ Transform transforms streamed data by batches
 */
 func (zf Batch) Transform(tf func(int) (FeaturesMapper, error)) Batch {
 	return Batch{zf.int, func() lazy.Stream {
-		f := lazy.AtomicFlag{Value: 0}
+		f := fu.AtomicFlag{Value: 0}
 		tx, err := tf(zf.int)
 		if err != nil {
 			return lazy.Error(err)
@@ -163,16 +163,16 @@ func (zf Batch) Transform(tf func(int) (FeaturesMapper, error)) Batch {
 					t, err := tx.MapFeatures(lr)
 					if err != nil {
 						f.Set()
-						return mlutil.False, err
+						return fu.False, err
 					}
 					return reflect.ValueOf(t), nil
 				}
 				if v.Bool() {
-					return mlutil.True, nil
+					return fu.True, nil
 				}
 				f.Set()
 			}
-			return mlutil.False, nil
+			return fu.False, nil
 		}
 	}}
 }

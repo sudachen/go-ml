@@ -1,7 +1,8 @@
 package nn
 
 import (
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/nn/mx"
 	"github.com/sudachen/go-ml/tables"
@@ -25,7 +26,7 @@ type Model struct {
 }
 
 func (e Model) Feed(ds model.Dataset) model.FatModel {
-	return func(iterations int, output fu.Output, mx ...model.Metrics) (*tables.Table, error) {
+	return func(iterations int, output iokit.Output, mx ...model.Metrics) (*tables.Table, error) {
 		iterations = fu.Fnzi(iterations, 1)
 		return fit(iterations, e, ds, output, mx...)
 	}
@@ -37,7 +38,7 @@ PredictionModel is the FeaturesMapper factory
 type PredictionModel struct {
 	features       []string
 	predicts       string
-	symbol, params fu.Input
+	symbol, params iokit.Input
 	context        mx.Context
 }
 
@@ -114,7 +115,7 @@ func (fm *FeaturesMapper) Close() error {
 	return nil
 }
 
-func ObjectifyModel(c map[string]fu.Input) (pm model.PredictionModel, err error) {
+func ObjectifyModel(c map[string]iokit.Input) (pm model.PredictionModel, err error) {
 	var rd io.ReadCloser
 	if rd, err = c["info.yaml"].Open(); err != nil {
 		return
@@ -133,7 +134,7 @@ func ObjectifyModel(c map[string]fu.Input) (pm model.PredictionModel, err error)
 	return m, nil
 }
 
-func Objectify(source fu.Inout, collection ...string) (fm model.GpuPredictionModel, err error) {
+func Objectify(source iokit.InputOutput, collection ...string) (fm model.GpuPredictionModel, err error) {
 	x := fu.Fnzs(fu.Fnzs(collection...), "model")
 	m, err := model.Objectify(source, model.ObjectifyMap{x: ObjectifyModel})
 	if err != nil {
@@ -142,7 +143,7 @@ func Objectify(source fu.Inout, collection ...string) (fm model.GpuPredictionMod
 	return m[x].(model.GpuPredictionModel), nil
 }
 
-func LuckyObjectify(source fu.Inout, collection ...string) model.GpuPredictionModel {
+func LuckyObjectify(source iokit.InputOutput, collection ...string) model.GpuPredictionModel {
 	fm, err := Objectify(source, collection...)
 	if err != nil {
 		panic(err)

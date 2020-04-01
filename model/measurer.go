@@ -1,14 +1,14 @@
 package model
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
 	"reflect"
 )
 
 type Measurer []Metrics
 
-func (metrics Measurer) Iterate(iteration int, subset string, result, label *tables.Column) (mlutil.Struct, bool) {
+func (metrics Measurer) Iterate(iteration int, subset string, result, label *tables.Column) (fu.Struct, bool) {
 	metrics.Begin()
 	metrics.ColumnUpdate(result, label)
 	return metrics.Complete(iteration, subset)
@@ -45,8 +45,8 @@ func (metrics Measurer) Update(result, label reflect.Value) {
 	}
 }
 
-func (metrics Measurer) Complete(iteration int, subset string) (mlutil.Struct, bool) {
-	line := mlutil.MakeStruct([]string{"Iteration", "Subset"}, iteration, subset)
+func (metrics Measurer) Complete(iteration int, subset string) (fu.Struct, bool) {
+	line := fu.MakeStruct([]string{"Iteration", "Subset"}, iteration, subset)
 	done := false
 	for _, m := range metrics {
 		r, ok := m.Complete()

@@ -2,7 +2,8 @@ package xgb
 
 import (
 	"encoding/json"
-	"github.com/sudachen/go-foo/fu"
+	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"io"
@@ -20,7 +21,7 @@ type Model struct {
 }
 
 func (e Model) Feed(ds model.Dataset) model.FatModel {
-	return func(iterations int, output fu.Output, mx ...model.Metrics) (*tables.Table, error) {
+	return func(iterations int, output iokit.Output, mx ...model.Metrics) (*tables.Table, error) {
 		iterations = fu.Fnzi(iterations, 1)
 		return fit(iterations, e, ds, output, mx...)
 	}
@@ -28,7 +29,7 @@ func (e Model) Feed(ds model.Dataset) model.FatModel {
 
 type Params map[string]interface{}
 
-func ObjectifyModel(c map[string]fu.Input) (pm model.PredictionModel, err error) {
+func ObjectifyModel(c map[string]iokit.Input) (pm model.PredictionModel, err error) {
 	var rd io.ReadCloser
 	if rd, err = c["info.json"].Open(); err != nil {
 		return
@@ -46,7 +47,7 @@ func ObjectifyModel(c map[string]fu.Input) (pm model.PredictionModel, err error)
 	return m, nil
 }
 
-func Objectify(source fu.Inout, collection ...string) (fm model.PredictionModel, err error) {
+func Objectify(source iokit.InputOutput, collection ...string) (fm model.PredictionModel, err error) {
 	x := fu.Fnzs(fu.Fnzs(collection...), "model")
 	m, err := model.Objectify(source, model.ObjectifyMap{x: ObjectifyModel})
 	if err != nil {
@@ -55,7 +56,7 @@ func Objectify(source fu.Inout, collection ...string) (fm model.PredictionModel,
 	return m[x], nil
 }
 
-func LuckyObjectify(source fu.Inout, collection ...string) model.PredictionModel {
+func LuckyObjectify(source iokit.InputOutput, collection ...string) model.PredictionModel {
 	fm, err := Objectify(source, collection...)
 	if err != nil {
 		panic(err)

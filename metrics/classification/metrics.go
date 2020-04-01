@@ -1,8 +1,7 @@
 package classification
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
 	"reflect"
 )
@@ -57,19 +56,19 @@ result - can be a single integer value in interval [0..) or tensor of float valu
 
 */
 func (m *Metrics) Update(result, label reflect.Value) {
-	l := mlutil.Cell{label}.Int()
+	l := fu.Cell{label}.Int()
 	y := 0
-	if result.Type() == mlutil.TensorType {
-		v := result.Interface().(mlutil.Tensor)
+	if result.Type() == fu.TensorType {
+		v := result.Interface().(fu.Tensor)
 		y = v.HotOne()
 	} else {
 		if m.Confidence > 0 {
-			x := mlutil.Cell{result}.Real()
+			x := fu.Cell{result}.Real()
 			if x > m.Confidence {
 				y = 1
 			}
 		} else {
-			y = mlutil.Cell{result}.Int()
+			y = fu.Cell{result}.Int()
 		}
 	}
 	if l == y {
@@ -82,7 +81,7 @@ func (m *Metrics) Update(result, label reflect.Value) {
 	m.count++
 }
 
-func (m *Metrics) Complete() (mlutil.Struct, bool) {
+func (m *Metrics) Complete() (fu.Struct, bool) {
 	if m.count > 0 {
 		acc := m.correct / m.count
 		cno := float64(len(m.cCorrect))
@@ -106,7 +105,7 @@ func (m *Metrics) Complete() (mlutil.Struct, bool) {
 		if m.Accuracy > 0 {
 			goal = goal || acc > m.Accuracy
 		}
-		return mlutil.Struct{Names: Names, Columns: columns}, goal
+		return fu.Struct{Names: Names, Columns: columns}, goal
 	}
-	return mlutil.NaStruct(Names, mlutil.Float32), false
+	return fu.NaStruct(Names, fu.Float32), false
 }

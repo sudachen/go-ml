@@ -1,8 +1,7 @@
 package tables
 
 import (
-	"github.com/sudachen/go-foo/fu"
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"golang.org/x/xerrors"
 	"reflect"
 )
@@ -86,8 +85,8 @@ func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string
 	width := 0
 	for _, n := range features {
 		c := t.Col(n)
-		if c.Type() == mlutil.TensorType {
-			width += c.Inspect().([]mlutil.Tensor)[0].Volume()
+		if c.Type() == fu.TensorType {
+			width += c.Inspect().([]fu.Tensor)[0].Volume()
 		} else {
 			width++
 		}
@@ -98,8 +97,8 @@ func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string
 	if label != "" {
 		lc := t.Col(label)
 		lwidth = 1
-		if lc.Type() == mlutil.TensorType {
-			lwidth = lc.Inspect().([]mlutil.Tensor)[0].Volume()
+		if lc.Type() == fu.TensorType {
+			lwidth = lc.Inspect().([]fu.Tensor)[0].Volume()
 		}
 	}
 
@@ -147,7 +146,7 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 	}
 	z := [2]int{}
 	switch c.Type() {
-	case mlutil.Float32:
+	case fu.Float32:
 		x := c.Inspect().([]float32)
 		for j := 0; j < length; j++ {
 			jf := f(j)
@@ -155,7 +154,7 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 			z[jf]++
 		}
 		wc++
-	case mlutil.Float64:
+	case fu.Float64:
 		x := c.Inspect().([]float64)
 		for j := 0; j < length; j++ {
 			jf := f(j)
@@ -163,7 +162,7 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 			z[jf]++
 		}
 		wc++
-	case mlutil.Int:
+	case fu.Int:
 		x := c.Inspect().([]int)
 		for j := 0; j < length; j++ {
 			jf := f(j)
@@ -171,8 +170,8 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 			z[jf]++
 		}
 		wc++
-	case mlutil.TensorType:
-		x := c.Inspect().([]mlutil.Tensor)
+	case fu.TensorType:
+		x := c.Inspect().([]fu.Tensor)
 		vol := x[0].Volume()
 		for j := 0; j < length; j++ {
 			if x[j].Volume() != vol {
@@ -182,25 +181,25 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 			m := z[jf]
 			t := where[jf]
 			switch x[j].Type() {
-			case mlutil.Float32:
+			case fu.Float32:
 				y := x[j].Values().([]float32)
 				copy(t[m*width+wc:m*width+wc+vol], y)
-			case mlutil.Float64:
+			case fu.Float64:
 				y := x[j].Values().([]float64)
 				for k := 0; k < vol; k++ {
 					t[m*width+wc+k] = float32(y[k])
 				}
-			case mlutil.Byte:
+			case fu.Byte:
 				y := x[j].Values().([]byte)
 				for k := 0; k < vol; k++ {
 					t[m*width+wc+k] = float32(y[k]) / 256
 				}
-			case mlutil.Fixed8Type:
-				y := x[j].Values().([]mlutil.Fixed8)
+			case fu.Fixed8Type:
+				y := x[j].Values().([]fu.Fixed8)
 				for k := 0; k < vol; k++ {
 					t[m*width+wc+k] = y[k].Float32()
 				}
-			case mlutil.Int:
+			case fu.Int:
 				y := x[j].Values().([]int)
 				for k := 0; k < vol; k++ {
 					t[m*width+wc+k] = float32(y[k])
@@ -212,7 +211,7 @@ func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label b
 		}
 		wc += vol
 	default:
-		x := c.ExtractAs(mlutil.Float32, true).([]float32)
+		x := c.ExtractAs(fu.Float32, true).([]float32)
 		for j := 0; j < length; j++ {
 			jf := f(j)
 			where[jf][z[jf]*width+wc] = x[j]
@@ -228,7 +227,7 @@ AsTable converts raw features representation into Table
 */
 func (m Matrix) AsTable(names ...string) *Table {
 	columns := make([]reflect.Value, m.Width)
-	na := make([]mlutil.Bits, m.Width)
+	na := make([]fu.Bits, m.Width)
 	for i := range columns {
 		c := make([]float32, m.Length, m.Length)
 		for j := 0; j < m.Length; j++ {
@@ -246,9 +245,9 @@ func (m Matrix) AsColumn() *Column {
 	if m.Width == 1 {
 		return &Column{column: reflect.ValueOf(m.Features[0:m.Length])}
 	}
-	column := make([]mlutil.Tensor, m.Length)
+	column := make([]fu.Tensor, m.Length)
 	for i := 0; i < m.Length; i++ {
-		column[i] = mlutil.MakeFloat32Tensor(1, 1, m.Width, m.Features[m.Width*i:m.Width*(i+1)])
+		column[i] = fu.MakeFloat32Tensor(1, 1, m.Width, m.Features[m.Width*i:m.Width*(i+1)])
 	}
 	return &Column{column: reflect.ValueOf(column)}
 }
@@ -260,9 +259,9 @@ func (m Matrix) AsLabelColumn() *Column {
 	if m.LabelsWidth == 1 {
 		return &Column{column: reflect.ValueOf(m.Labels[0:m.Length])}
 	}
-	column := make([]mlutil.Tensor, m.Length)
+	column := make([]fu.Tensor, m.Length)
 	for i := 0; i < m.Length; i++ {
-		column[i] = mlutil.MakeFloat32Tensor(1, 1, m.LabelsWidth, m.Labels[m.LabelsWidth*i:m.LabelsWidth*(i+1)])
+		column[i] = fu.MakeFloat32Tensor(1, 1, m.LabelsWidth, m.Labels[m.LabelsWidth*i:m.LabelsWidth*(i+1)])
 	}
 	return &Column{column: reflect.ValueOf(column)}
 }

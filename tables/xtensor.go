@@ -1,7 +1,7 @@
 package tables
 
 import (
-	"github.com/sudachen/go-ml/mlutil"
+	"github.com/sudachen/go-ml/fu"
 	"golang.org/x/xerrors"
 	"reflect"
 	"unsafe"
@@ -10,11 +10,11 @@ import (
 type Xtensor struct{ T reflect.Type }
 
 func (t *Xtensor) Type() reflect.Type {
-	return mlutil.TensorType
+	return fu.TensorType
 }
 
 func (t Xtensor) Convert(value string, field *reflect.Value, _, _ int) (_ bool, err error) {
-	z, err := mlutil.DecodeTensor(value)
+	z, err := fu.DecodeTensor(value)
 	if err != nil {
 		return
 	}
@@ -22,22 +22,22 @@ func (t Xtensor) Convert(value string, field *reflect.Value, _, _ int) (_ bool, 
 	return
 }
 
-func tensorOf(field *reflect.Value, tp reflect.Type, width int) (mlutil.Tensor, error) {
+func tensorOf(field *reflect.Value, tp reflect.Type, width int) (fu.Tensor, error) {
 	if field.IsValid() {
-		return *(*mlutil.Tensor)(unsafe.Pointer(field.Pointer())), nil
+		return *(*fu.Tensor)(unsafe.Pointer(field.Pointer())), nil
 	}
-	var z mlutil.Tensor
+	var z fu.Tensor
 	switch tp {
-	case mlutil.Float64:
-		z = mlutil.MakeFloat64Tensor(1, 1, width, nil)
-	case mlutil.Float32:
-		z = mlutil.MakeFloat32Tensor(1, 1, width, nil)
-	case mlutil.Fixed8Type:
-		z = mlutil.MakeFixed8Tensor(1, 1, width, nil)
-	case mlutil.Int:
-		z = mlutil.MakeIntTensor(1, 1, width, nil)
-	case mlutil.Byte:
-		z = mlutil.MakeByteTensor(1, 1, width, nil)
+	case fu.Float64:
+		z = fu.MakeFloat64Tensor(1, 1, width, nil)
+	case fu.Float32:
+		z = fu.MakeFloat32Tensor(1, 1, width, nil)
+	case fu.Fixed8Type:
+		z = fu.MakeFixed8Tensor(1, 1, width, nil)
+	case fu.Int:
+		z = fu.MakeIntTensor(1, 1, width, nil)
+	case fu.Byte:
+		z = fu.MakeByteTensor(1, 1, width, nil)
 	default:
 		return z, xerrors.Errorf("unknown tensor value type " + tp.String())
 	}
@@ -57,7 +57,7 @@ func (Xtensor) Format(x reflect.Value, na bool) string {
 	if na {
 		return ""
 	}
-	if x.Type() == mlutil.TensorType {
+	if x.Type() == fu.TensorType {
 		return x.String()
 	}
 	panic(xerrors.Errorf("`%v` is not an Xtensor value", x))
