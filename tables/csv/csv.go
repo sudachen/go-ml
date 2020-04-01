@@ -130,7 +130,7 @@ func lazyread(source iokit.Input, opts ...interface{}) tables.Lazy {
 				} else {
 					output := fu.Struct{names, make([]reflect.Value, width), fu.Bits{}}
 					for i, v := range l.vals {
-						na := false
+						var na bool
 						if na, err = fm[i].Convert(v, &output.Columns[fm[i].field], fm[i].index, fm[i].width); err != nil {
 							break
 						}
