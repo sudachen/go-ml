@@ -5,18 +5,39 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 
-```
-Copyright 2020 Alexey Sudachen
+```golang
+var mnistConv0 = nn.Connect(
+	&nn.Convolution{Channels: 24, Kernel: mx.Dim(3, 3), Activation: nn.ReLU},
+	&nn.MaxPool{Kernel: mx.Dim(2, 2), Stride: mx.Dim(2, 2)},
+	&nn.Convolution{Channels: 32, Kernel: mx.Dim(5, 5), Activation: nn.ReLU, BatchNorm: true},
+	&nn.MaxPool{Kernel: mx.Dim(2, 2), Stride: mx.Dim(2, 2)},
+	&nn.FullyConnected{Size: 32, Activation: nn.Swish, BatchNorm: true, Dropout: 0.33},
+	&nn.FullyConnected{Size: 10, Activation: nn.Softmax})
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+func Test_mnistConv0(t *testing.T) {
+	modelFile := iokit.File(fu.ModelPath("mnist_test_conv0.zip"))
 
-     http://www.apache.org/licenses/LICENSE-2.0
+	metrics := nn.Model{
+		Network:   mnistConv0,
+		Optimizer: &nn.Adam{Lr: .001},
+		Loss:      &nn.LabelCrossEntropyLoss{},
+		Input:     mx.Dim(1, 28, 28),
+		Seed:      42,
+		BatchSize: 32,
+		//Context:   mx.GPU,
+	}.Feed(model.Dataset{
+		Source:   mnist.Data.RandomFlag("Test", 42, 0.2),
+		Label:    "Label",
+		Test:     "Test",
+		Features: []string{"Image"},
+	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.98})
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+	fmt.Println(metrics)
+	assert.Assert(t, metrics.Last().Float("Accuracy") >= 0.98)
+
+	net1 := nn.LuckyObjectify(modelFile) //.Gpu()
+	metrics1 := model.LuckyEvaluate(mnist.T10k, "Label", net1, 32, &classification.Metrics{})
+	fmt.Println(metrics1)
+	assert.Assert(t, metrics1.Last().Float("Accuracy") >= 0.98)
+}
 ```
