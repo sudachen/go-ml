@@ -20,7 +20,9 @@ jobs:
           keys:
             - v1-pkg-cache
 
-      - run: git clone https://github.com/sudachen/go-foo
+      - run: git clone https://github.com/sudachen/go-iokit
+
+      - run: git clone https://github.com/sudachen/go-zorros
 
       - run: make build
 
