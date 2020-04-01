@@ -139,11 +139,12 @@ func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string
 	return mx[0], mx[1], nil
 }
 
-func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label bool, wc, width, length int) (_ int, err error) {
+func (t *Table) addToMatrix(f func(int) int, matrix []Matrix, c *Column, label bool, xc, width, length int) (wc int, err error) {
 	where := [2][]float32{
 		fu.Ife(label, matrix[0].Labels, matrix[0].Features).([]float32),
 		fu.Ife(label, matrix[1].Labels, matrix[1].Features).([]float32),
 	}
+	wc = xc
 	z := [2]int{}
 	switch c.Type() {
 	case fu.Float32:

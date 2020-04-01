@@ -39,7 +39,7 @@ func init() {
 			dl.LzmaExternal("https://github.com/sudachen/xgboost/releases/download/custom/libxgboost_cpu_win64.lzma"),
 			dlVerbose)
 	} else {
-		panic("unsupported platfrom")
+		panic("unsupported platform")
 	}
 
 	so.Bind("XGBoostVersion", unsafe.Pointer(&C._godl_XGBoostVersion))

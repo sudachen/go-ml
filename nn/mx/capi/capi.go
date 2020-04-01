@@ -69,7 +69,7 @@ func init() {
 			dl.LzmaExternal("https://github.com/sudachen/mxnet/releases/download/1.5.0-mkldnn-static/libmxnet_cpu_win64.lzma"),
 			dlVerbose)
 	} else {
-		panic("unsupported platfrom")
+		panic("unsupported platform")
 	}
 
 	so.Bind("MXGetVersion", unsafe.Pointer(&C._godl_MXGetVersion))
