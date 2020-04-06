@@ -10,4 +10,5 @@ tests.test
 /go-dl/
 /go-zorros/
 /go-iokit/
-
+/goptuna/
+/gonum/

@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"

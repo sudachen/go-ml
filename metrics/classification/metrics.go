@@ -6,20 +6,22 @@ import (
 	"reflect"
 )
 
-const Accuracy = "Accuracy"
-const Sensitivity = "Sensitivity"
-const Precision = "Precision"
-const F1Score = "F1Score"
-const Total = "Total"
-const Correct = "Correct"
+const accuracy = "Accuracy"
+const sensitivity = "Sensitivity"
+const precision = "Precision"
+const f1Score = "F1Score"
+const cerror = "Error"
+const total = "Total"
+const correct = "Correct"
 
 var Names = []string{
-	Accuracy,
-	Sensitivity,
-	Precision,
-	F1Score,
-	Correct,
-	Total,
+	cerror,
+	accuracy,
+	sensitivity,
+	precision,
+	f1Score,
+	correct,
+	total,
 }
 
 type Metrics struct {
@@ -31,6 +33,22 @@ type Metrics struct {
 	Accuracy   float64 // accuracy goal
 	Confidence float32 // threshold for binary classification
 	// if not specified it's multi-class classification
+}
+
+func Error(lr fu.Struct) float64 {
+	return 1.0 - lr.Float(cerror)
+}
+
+func Accuracy(lr fu.Struct) float64 {
+	return lr.Float(accuracy)
+}
+
+func Precision(lr fu.Struct) float64 {
+	return lr.Float(precision)
+}
+
+func F1Score(lr fu.Struct) float64 {
+	return lr.Float(f1Score)
 }
 
 func (m *Metrics) Copy() model.Metrics {
@@ -85,19 +103,22 @@ func (m *Metrics) Complete() (fu.Struct, bool) {
 	if m.count > 0 {
 		acc := m.correct / m.count
 		cno := float64(len(m.cCorrect))
-		var sensitivity, precision float64
+		var sensitivity, precision, cerr float64
 		for i, v := range m.cCorrect {
 			sensitivity += v / (v + m.lIncorrect[i]) // false negative
 			precision += v / (v + m.rIncorrect[i])   // false positive
+			cerr += ( m.rIncorrect[i] + m.lIncorrect[i] ) / (v + m.rIncorrect[i] + m.lIncorrect[i])
 		}
 		sensitivity /= cno
 		precision /= cno
+		cerr /= cno
 		f1 := 2 * precision * sensitivity / (precision + sensitivity)
 		columns := []reflect.Value{
-			reflect.ValueOf(fu.Round32(float32(acc), 4)),
-			reflect.ValueOf(fu.Round32(float32(sensitivity), 4)),
-			reflect.ValueOf(fu.Round32(float32(precision), 4)),
-			reflect.ValueOf(fu.Round32(float32(f1), 4)),
+			reflect.ValueOf(cerr),
+			reflect.ValueOf(acc),
+			reflect.ValueOf(sensitivity),
+			reflect.ValueOf(precision),
+			reflect.ValueOf(f1),
 			reflect.ValueOf(int(m.correct)),
 			reflect.ValueOf(int(m.count)),
 		}

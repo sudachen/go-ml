@@ -9,7 +9,6 @@ import (
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/nn"
 	"github.com/sudachen/go-ml/nn/mx"
-	"github.com/sudachen/go-ml/notes"
 	"github.com/sudachen/go-ml/xgb"
 	"gotest.tools/assert"
 	"testing"
@@ -82,33 +81,25 @@ func Test_mnistConv0(t *testing.T) {
 }
 
 func Test_minstXgb(t *testing.T) {
-	np := notes.Page{
-		Title:  `XGBoost Mnist Test`,
-		Footer: `!(http://github.com/sudachen/go-ml)`,
-	}.LuckyCreate(iokit.File("mnist_test_xgb.html"))
-	defer np.Ensure()
-
-	ds := mnist.Data.RandomFlag("Test", 43, 0.2)
-	np.Head("Dataset first lines", ds, 5)
-	np.Info("Dataset info", ds)
-
 	modelFile := iokit.File(fu.ModelPath("mnist_test_xgb.zip"))
 	metrics := xgb.Model{
 		Algorithm:    xgb.TreeBoost,
 		Function:     xgb.Softmax,
-		LearningRate: 0.3,
-		MaxDepth:     10,
-		Estimators:   100,
+		LearningRate: 0.5,
+		MaxDepth:     6,
+		Estimators:   1,
 	}.Feed(model.Dataset{
-		Source:   ds,
+		Source:   mnist.Data.RandomFlag("Test", 42, 0.1),
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(30, modelFile, &classification.Metrics{Accuracy: 0.96})
+	}).LuckyFit(30, modelFile, &classification.Metrics{Accuracy: 0.963})
 
-	np.Display("Metrics", metrics.Round(3))
-	np.Plot("Accuracy evolution by iteration", metrics, &notes.Lines{X: "Iteration", Y: []string{"Accuracy"}, Z: "Test"})
+	fmt.Println(metrics)
+	assert.Assert(t, metrics.Last().Float("Accuracy") >= 0.96)
+
 	pred := xgb.LuckyObjectify(modelFile)
 	metrics1 := model.LuckyEvaluate(mnist.T10k, "Label", pred, 32, &classification.Metrics{})
+	fmt.Println(metrics1)
 	assert.Assert(t, metrics1.Last().Float("Accuracy") >= 0.96)
 }

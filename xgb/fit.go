@@ -109,7 +109,7 @@ func (xgb *xgbinstance) evalMetrics(i int, testSubset bool, m unsafe.Pointer, la
 		Length:      labels.Len(),
 		LabelsWidth: 0,
 	}
-	subset := fu.Ifes(testSubset, "test", "train")
+	subset := fu.Ifes(testSubset, model.MetricsTestSubset, model.MetricsTrainSubset)
 	line, done := mr.Iterate(i, subset, pred.AsColumn(), labels)
 	*log = append(*log, &line)
 	return done

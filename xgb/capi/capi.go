@@ -126,7 +126,6 @@ func Matrix(data []float32, row, col int) unsafe.Pointer {
 }
 
 func Free(matrix unsafe.Pointer) {
-	C.XGDMatrixSaveBinary(C.DMatrixHandle(matrix), C.CString("matrix2.txt"), 0)
 	if e := C.XGDMatrixFree(C.DMatrixHandle(matrix)); e != 0 {
 		s := C.GoString(C.XGBGetLastError())
 		panic(xerrors.Errorf("xgbooster error: " + s))

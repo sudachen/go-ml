@@ -2,7 +2,7 @@ package iris
 
 import (
 	"github.com/sudachen/go-iokit/iokit"
-	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/tables/csv"
 )

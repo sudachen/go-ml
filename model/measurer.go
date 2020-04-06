@@ -46,7 +46,7 @@ func (metrics Measurer) Update(result, label reflect.Value) {
 }
 
 func (metrics Measurer) Complete(iteration int, subset string) (fu.Struct, bool) {
-	line := fu.MakeStruct([]string{"Iteration", "Subset"}, iteration, subset)
+	line := fu.MakeStruct([]string{MetricsIteration, MetricsSubset}, iteration, subset)
 	done := false
 	for _, m := range metrics {
 		r, ok := m.Complete()

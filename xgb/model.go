@@ -5,6 +5,7 @@ import (
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/model"
+	"github.com/sudachen/go-ml/model/hyperopt"
 	"github.com/sudachen/go-ml/tables"
 	"io"
 )
@@ -20,6 +21,8 @@ type Model struct {
 	Extra        Params
 }
 
+type Params map[string]interface{}
+
 func (e Model) Feed(ds model.Dataset) model.FatModel {
 	return func(iterations int, output iokit.Output, mx ...model.Metrics) (*tables.Table, error) {
 		iterations = fu.Fnzi(iterations, 1)
@@ -27,7 +30,14 @@ func (e Model) Feed(ds model.Dataset) model.FatModel {
 	}
 }
 
-type Params map[string]interface{}
+func (m Model) ModelFunc(p hyperopt.Params) model.HungryModel {
+	return m.Apply(p)
+}
+
+func (m Model) Apply(p hyperopt.Params) Model {
+	hyperopt.Apply(&m,p)
+	return m
+}
 
 func ObjectifyModel(c map[string]iokit.Input) (pm model.PredictionModel, err error) {
 	var rd io.ReadCloser

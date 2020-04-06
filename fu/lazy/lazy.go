@@ -224,8 +224,8 @@ func (zf Source) LuckyCount() int {
 }
 
 func (zf Source) RandFilter(seed int, prob float64, t bool) Source {
-	z := zf()
 	return func() Stream {
+		z := zf()
 		nr := fu.NaiveRandom{Value: uint32(seed)}
 		wc := fu.WaitCounter{Value: 0}
 		return func(index uint64) (v reflect.Value, err error) {

@@ -20,7 +20,7 @@ type Matrix struct {
 Matrix returns matrix without labels
 */
 func (t *Table) Matrix(features []string, least ...int) (m Matrix, err error) {
-	m, _, err = t.MatrixWithLabelIf(features, "", "", nil, least...)
+	_, m, err = t.MatrixWithLabelIf(features, "", "", nil, least...)
 	return
 }
 
@@ -28,7 +28,7 @@ func (t *Table) Matrix(features []string, least ...int) (m Matrix, err error) {
 MatrixWithLabel returns matrix with labels
 */
 func (t *Table) MatrixWithLabel(features []string, label string, least ...int) (m Matrix, err error) {
-	m, _, err = t.MatrixWithLabelIf(features, label, "", nil, least...)
+	_, m, err = t.MatrixWithLabelIf(features, label, "", nil, least...)
 	return
 }
 
@@ -46,40 +46,41 @@ MatrixWithLabelIf returns two matrices with labels
 the first one contains samples with column ifName equal ifValue
 the second one - samples with column ifName not equal ifValue
 */
-func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string, ifValue interface{}, least ...int) (_, _ Matrix, err error) {
-	L := [2]int{}
-	filter := func(int) int { return 0 }
+func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string, ifValue interface{}, least ...int) (test, train Matrix, err error) {
+	L := [2]int{0,t.Len()}
+	filter := func(int) int { return 1 }
 	if ifName != "" {
-		tc := t.Col(ifName)
-		if a, ok := tc.Inspect().([]bool); ok {
-			vt := ifValue.(bool)
-			filter = func(i int) int {
-				if a[i] == vt {
-					return 0
+		if tc, ok := t.ColIfExists(ifName); ok {
+			if a, ok := tc.Inspect().([]bool); ok {
+				vt := ifValue.(bool)
+				filter = func(i int) int {
+					if a[i] == vt {
+						return 0
+					}
+					return 1
 				}
-				return 1
+			} else if a, ok := tc.Inspect().([]int); ok {
+				vt := ifValue.(int)
+				filter = func(i int) int {
+					if a[i] == vt {
+						return 0
+					}
+					return 1
+				}
+			} else {
+				filter = func(i int) int {
+					if tc.Index(i).Value == ifValue {
+						return 0
+					}
+					return 1
+				}
 			}
-		} else if a, ok := tc.Inspect().([]int); ok {
-			vt := ifValue.(int)
-			filter = func(i int) int {
-				if a[i] == vt {
-					return 0
-				}
-				return 1
-			}
-		} else {
-			filter = func(i int) int {
-				if tc.Index(i).Value == ifValue {
-					return 0
-				}
-				return 1
+			l := t.Len()
+			L = [2]int{0,0}
+			for i := 0; i < l; i++ {
+				L[filter(i)]++
 			}
 		}
-		for i := 0; i < t.Len(); i++ {
-			L[filter(i)]++
-		}
-	} else {
-		L[0] = t.Len()
 	}
 
 	width := 0
@@ -102,8 +103,11 @@ func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string
 		}
 	}
 
-	L[0] = fu.Maxi(L[0], least...)
-	L[1] = fu.Maxi(L[1], least...)
+	for i := range L {
+		if L[i] > 0 {
+			L[i] = fu.Maxi(L[i], least...)
+		}
+	}
 
 	mx := []Matrix{
 		{make([]float32, L[0]*width), make([]float32, L[0]*lwidth), width, L[0], lwidth},

@@ -6,7 +6,7 @@ package tables
 import (
 	"fmt"
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"golang.org/x/xerrors"
 	"math/bits"
 	"reflect"
@@ -78,6 +78,15 @@ func (t *Table) Col(c string) *Column {
 		}
 	}
 	panic("there is not column with name " + c)
+}
+
+func (t *Table) ColIfExists(c string) (*Column, bool) {
+	for i, n := range t.raw.Names {
+		if n == c {
+			return &Column{t.raw.Columns[i], t.raw.Na[i]}, true
+		}
+	}
+	return nil, false
 }
 
 /*
@@ -614,8 +623,10 @@ func (t *Table) Index(r int) fu.Struct {
 	return fu.Struct{names, columns, na}
 }
 
-func (t *Table) Last() fu.Struct {
-	return t.Index(t.Len() - 1)
+func (t *Table) Last(n ...int) fu.Struct {
+	k := 1
+	if len(n) > 0 { k = n[0]+1 }
+	return t.Index(t.Len() - k)
 }
 
 func (t *Table) With(column *Column, name string) *Table {

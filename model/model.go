@@ -26,6 +26,11 @@ type Metrics interface {
 	Copy() Metrics
 }
 
+const MetricsSubset = "Subset"
+const MetricsIteration = "Iteration"
+const MetricsTestSubset = "test"
+const MetricsTrainSubset = "train"
+
 // FatModel is fattened model (a training function of model instance bounded to a dataset)
 type FatModel func(int, iokit.Output, ...Metrics) (*tables.Table, error)
 

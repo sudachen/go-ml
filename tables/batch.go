@@ -2,7 +2,7 @@ package tables
 
 import (
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"reflect"
 )
 

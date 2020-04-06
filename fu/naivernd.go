@@ -31,3 +31,8 @@ func (nr *NaiveRandom) Uint() uint {
 func (nr *NaiveRandom) Float() float64 {
 	return float64(nr.Uint()) / math.MaxUint32
 }
+
+func Seed(seed int) int {
+	if seed != 0 { return seed }
+	return int(time.Now().UnixNano()+int64(os.Getpid()))
+}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/lazy"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-zorros/zorros"
 	"io"
