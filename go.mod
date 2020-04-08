@@ -6,8 +6,6 @@ replace github.com/sudachen/go-zorros => ./go-zorros
 
 replace github.com/sudachen/go-iokit => ./go-iokit
 
-replace github.com/c-bata/goptuna => ./goptuna
-
 require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/sudachen/go-dl v1.0.1
