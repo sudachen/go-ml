@@ -15,6 +15,8 @@ const total = "Total"
 const correct = "Correct"
 
 var Names = []string{
+	model.Iteration,
+	model.Subset,
 	cerror,
 	accuracy,
 	sensitivity,
@@ -24,19 +26,30 @@ var Names = []string{
 	total,
 }
 
+/*
+Metrics - the classification metrics factory
+*/
 type Metrics struct {
+	Accuracy   float64 // accuracy goal
+	Error      float64 // error goal
+	Delta      float64 // score delta
+	Confidence float32 // threshold for binary classification
+	History    int     // length of scores/models history
+}
+
+type MetricsUpdater struct {
+	Metrics
+	iteration  int
+	subset     string
 	correct    float64
 	lIncorrect map[int]float64
 	rIncorrect map[int]float64
 	cCorrect   map[int]float64
 	count      float64
-	Accuracy   float64 // accuracy goal
-	Confidence float32 // threshold for binary classification
-	// if not specified it's multi-class classification
 }
 
 func Error(lr fu.Struct) float64 {
-	return 1.0 - lr.Float(cerror)
+	return lr.Float(cerror)
 }
 
 func Accuracy(lr fu.Struct) float64 {
@@ -51,16 +64,23 @@ func F1Score(lr fu.Struct) float64 {
 	return lr.Float(f1Score)
 }
 
-func (m *Metrics) Copy() model.Metrics {
-	return &Metrics{Accuracy: m.Accuracy, Confidence: m.Confidence}
+/*
+New iteration metrics
+*/
+func (m *Metrics) New(iteration int, subset string) model.MetricsUpdater {
+	return &MetricsUpdater{
+		*m, iteration, subset,
+		0,
+		map[int]float64{}, map[int]float64{}, map[int]float64{},
+		0}
 }
 
-func (m *Metrics) Begin() {
-	m.correct = 0
-	m.lIncorrect = map[int]float64{}
-	m.rIncorrect = map[int]float64{}
-	m.cCorrect = map[int]float64{}
-	m.count = 0
+func (m *Metrics) Names() []string {
+	return Names
+}
+
+func (m *Metrics) HistoryLength() int {
+	return fu.Fnzi(m.History, model.HistoryLength)
 }
 
 /*
@@ -73,7 +93,7 @@ result - can be a single integer value in interval [0..) or tensor of float valu
 	otherwise class is selected by hot_one function
 
 */
-func (m *Metrics) Update(result, label reflect.Value) {
+func (m *MetricsUpdater) Update(result, label reflect.Value) {
 	l := fu.Cell{label}.Int()
 	y := 0
 	if result.Type() == fu.TensorType {
@@ -99,7 +119,7 @@ func (m *Metrics) Update(result, label reflect.Value) {
 	m.count++
 }
 
-func (m *Metrics) Complete() (fu.Struct, bool) {
+func (m *MetricsUpdater) Complete() (fu.Struct, bool) {
 	if m.count > 0 {
 		acc := m.correct / m.count
 		cno := float64(len(m.cCorrect))
@@ -107,13 +127,15 @@ func (m *Metrics) Complete() (fu.Struct, bool) {
 		for i, v := range m.cCorrect {
 			sensitivity += v / (v + m.lIncorrect[i]) // false negative
 			precision += v / (v + m.rIncorrect[i])   // false positive
-			cerr += ( m.rIncorrect[i] + m.lIncorrect[i] ) / (v + m.rIncorrect[i] + m.lIncorrect[i])
+			cerr += (m.rIncorrect[i] + m.lIncorrect[i]) / m.count
 		}
 		sensitivity /= cno
 		precision /= cno
 		cerr /= cno
 		f1 := 2 * precision * sensitivity / (precision + sensitivity)
 		columns := []reflect.Value{
+			reflect.ValueOf(m.iteration),
+			reflect.ValueOf(m.subset),
 			reflect.ValueOf(cerr),
 			reflect.ValueOf(acc),
 			reflect.ValueOf(sensitivity),
@@ -126,7 +148,14 @@ func (m *Metrics) Complete() (fu.Struct, bool) {
 		if m.Accuracy > 0 {
 			goal = goal || acc > m.Accuracy
 		}
+		if m.Error > 0 {
+			goal = goal || cerr < m.Error
+		}
 		return fu.Struct{Names: Names, Columns: columns}, goal
 	}
-	return fu.NaStruct(Names, fu.Float32), false
+	return fu.
+			NaStruct(Names, fu.Float32).
+			Set(model.Iteration, fu.IntZero).
+			Set(model.Subset, fu.EmptyString),
+		false
 }

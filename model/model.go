@@ -5,7 +5,6 @@ import (
 	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-zorros/zorros"
-	"reflect"
 )
 
 /*
@@ -16,37 +15,29 @@ type HungryModel interface {
 	Feed(Dataset) FatModel
 }
 
-/*
-Metrics interface
-*/
-type Metrics interface {
-	Begin()
-	Update(result, label reflect.Value)
-	Complete() (fu.Struct, bool)
-	Copy() Metrics
+type Report struct {
+	History     *tables.Table // all iterations history
+	TheBest     int           // the best iteration
+	Test, Train fu.Struct     // the best iteration metrics
+	Score       float64       // the best score
 }
 
-const MetricsSubset = "Subset"
-const MetricsIteration = "Iteration"
-const MetricsTestSubset = "test"
-const MetricsTrainSubset = "train"
-
 // FatModel is fattened model (a training function of model instance bounded to a dataset)
-type FatModel func(int, iokit.Output, ...Metrics) (*tables.Table, error)
+type FatModel func(iterations int, file iokit.Output, metrics Metrics, score Score) (Report, error)
 
 /*
 Fit trains a fattened (Fat) model
 */
-func (f FatModel) Fit(iterations int, output iokit.Output, mx ...Metrics) (*tables.Table, error) {
+func (f FatModel) Fit(iterations int, output iokit.Output, metrics Metrics, score Score) (Report, error) {
 	iterations = fu.Maxi(1, iterations)
-	return f(iterations, output, mx...)
+	return f(iterations, output, metrics, score)
 }
 
 /*
 LuckyFit trains fattened (Fat) model and trows any occurred errors as a panic
 */
-func (f FatModel) LuckyFit(iterations int, output iokit.Output, mx ...Metrics) *tables.Table {
-	m, err := f.Fit(iterations, output, mx...)
+func (f FatModel) LuckyFit(iterations int, output iokit.Output, metrics Metrics, score Score) Report {
+	m, err := f.Fit(iterations, output, metrics, score)
 	if err != nil {
 		panic(zorros.Panic(err))
 	}

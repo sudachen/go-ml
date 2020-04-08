@@ -125,6 +125,26 @@ func IndexOfMax(a interface{}) int {
 	return MaxIndex(v)
 }
 
+func Indmaxd(a []float64) int {
+	j := 0
+	for i, x := range a {
+		if x > a[j] {
+			j = i
+		}
+	}
+	return j
+}
+
+func Indmind(a []float64) int {
+	j := 0
+	for i, x := range a {
+		if x < a[j] {
+			j = i
+		}
+	}
+	return j
+}
+
 /*
 Maxi returns maximal int value
 */

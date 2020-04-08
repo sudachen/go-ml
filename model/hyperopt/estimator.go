@@ -11,7 +11,7 @@ type estimator struct {
 	sigmas  []float64
 }
 
-func buildEstimator( mus []float64, low float64, high float64, s *sampler ) estimator {
+func buildEstimator(mus []float64, low float64, high float64, s *sampler) estimator {
 	considerPrior := true
 	considerMagicClip := false
 	considerEndpoints := true
@@ -92,5 +92,5 @@ func buildEstimator( mus []float64, low float64, high float64, s *sampler ) esti
 		sigma[priorPos] = priorSigma
 	}
 
-	return estimator{sortedWeights, sortedMus, sigma }
+	return estimator{sortedWeights, sortedMus, sigma}
 }

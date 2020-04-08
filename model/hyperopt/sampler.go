@@ -1,6 +1,7 @@
 package hyperopt
 
 import (
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-zorros/zorros"
 	"gonum.org/v1/gonum/floats"
 	"math"
@@ -25,10 +26,10 @@ func (s *sampler) sample(name string, dist distribution, opt *optimizer) (value 
 		value = dist.sample1(s)
 	} else {
 		belowParamValues, aboveParamValues := s.splitObservationPairs(values, scores)
-		value = dist.sample2(s,belowParamValues,aboveParamValues)
+		value = dist.sample2(s, belowParamValues, aboveParamValues)
 	}
 
-	opt.update(name,value)
+	opt.update(name, value)
 	return
 }
 
@@ -379,41 +380,115 @@ func (s *sampler) sampleFromGMM(pe estimator, low, high float64, size int, q flo
 	return samples
 }
 
-
 func (r Range) sample1(s *sampler) (x float64) {
-	if r[0] < 0 { zorros.Panic(zorros.Errorf("negative hyper-parameters are not allowed")) }
-	if r[0]+epsilon >= r[1] { zorros.Panic(zorros.Errorf("empty hyper-parameters range")) }
+	if r[0] < 0 {
+		zorros.Panic(zorros.Errorf("negative hyper-parameters are not allowed"))
+	}
+	if r[0]+epsilon >= r[1] {
+		zorros.Panic(zorros.Errorf("empty hyper-parameters range"))
+	}
 	x = s.rng.Float64()*(r[1]-r[0]) + r[0]
-	if x < epsilon { x = epsilon }
+	if x < epsilon {
+		x = epsilon
+	}
 	return
 }
 
-func (r Range) sample2(s *sampler, below,above []float64) (x float64) {
-	x = s.sampleNumerical(r[0], r[1], below, above,0, false)
-	if x < epsilon { x = epsilon }
+func (r Range) sample2(s *sampler, below, above []float64) (x float64) {
+	x = s.sampleNumerical(r[0], r[1], below, above, 0, false)
+	if x < epsilon {
+		x = epsilon
+	}
 	return
 }
 
 func (r IntRange) sample1(s *sampler) float64 {
-	if r[0] <= 0 { zorros.Panic(zorros.Errorf("zero and negative hyper-parameters are not allowed")) }
-	if r[0] >= r[1]+1 { zorros.Panic(zorros.Errorf("empty hyper-parameters range")) }
-	if r[0] == r[1] { return float64(r[0]) }
+	if r[0] <= 0 {
+		zorros.Panic(zorros.Errorf("zero and negative hyper-parameters are not allowed"))
+	}
+	if r[0] >= r[1]+1 {
+		zorros.Panic(zorros.Errorf("empty hyper-parameters range"))
+	}
+	if r[0] == r[1] {
+		return float64(r[0])
+	}
 	return float64(s.rng.Intn(r[1]+1-r[0]) + r[0])
 }
 
-func (r IntRange) sample2(s *sampler, below,above []float64) (x float64) {
-	x = s.sampleNumerical(float64(r[0]) - 0.5, float64(r[1]) + 0.5, below, above,1, false)
-	if x < epsilon { x = epsilon }
+func (r IntRange) sample2(s *sampler, below, above []float64) (x float64) {
+	x = math.Ceil(s.sampleNumerical(float64(r[0])-0.5, float64(r[1])+0.5, below, above, 1, false))
+	if x < epsilon {
+		x = epsilon
+	}
 	return
 }
 
+func (r LogIntRange) sample1(s *sampler) float64 {
+	if r[0] <= 0 {
+		zorros.Panic(zorros.Errorf("zero and negative hyper-parameters are not allowed"))
+	}
+	if r[0] >= r[1]+1 {
+		zorros.Panic(zorros.Errorf("empty hyper-parameters range"))
+	}
+	if r[0] == r[1] {
+		return float64(r[0])
+	}
+	logLow := math.Log(float64(r[0]))
+	logHigh := math.Log(float64(r[1] + 1))
+	return math.Ceil(math.Exp(s.rng.Float64()*(logHigh-logLow) + logLow))
+}
+
+func (r LogIntRange) sample2(s *sampler, below, above []float64) (x float64) {
+	x = math.Ceil(s.sampleNumerical(float64(r[0])-0.5, float64(r[1])+0.5, below, above, 1, true))
+	if x < epsilon {
+		x = epsilon
+	}
+	return
+}
+
+func (r LogRange) sample1(s *sampler) (x float64) {
+	if r[0] < 0 {
+		zorros.Panic(zorros.Errorf("negative hyper-parameters are not allowed"))
+	}
+	if r[0]+epsilon >= r[1] {
+		zorros.Panic(zorros.Errorf("empty hyper-parameters range"))
+	}
+	logLow := math.Log(float64(fu.Ifed(r[0] < epsilon, epsilon, r[0])))
+	logHigh := math.Log(float64(r[1]))
+	x = math.Exp(s.rng.Float64()*(logHigh-logLow) + logLow)
+	if math.IsNaN(x) {
+		panic("")
+	}
+	return
+}
+
+func (r LogRange) sample2(s *sampler, below, above []float64) (x float64) {
+	x = s.sampleNumerical(r[0], r[1], below, above, 0, true)
+	if x < epsilon {
+		x = epsilon
+	}
+	return
+}
+
+func (v Value) sample1(_ *sampler) float64 {
+	return float64(v)
+}
+
+func (v Value) sample2(_ *sampler, _, _ []float64) float64 {
+	return float64(v)
+}
+
 func (l List) sample1(s *sampler) float64 {
-	if len(l) == 0 { zorros.Panic(zorros.Errorf("empty hyper-parameters list")) }
-	if len(l) == 1 { return l[0] }
+	if len(l) == 0 {
+		zorros.Panic(zorros.Errorf("empty hyper-parameters list"))
+	}
+	if len(l) == 1 {
+		return l[0]
+	}
 	return float64(l[s.rng.Intn(len(l))])
 }
 
-func (l List) sample2(s *sampler, below,above []float64) float64 {
+func (l List) sample2(s *sampler, below, above []float64) float64 {
 	belowInt := make([]int, len(below))
 	for i := range below {
 		belowInt[i] = int(below[i])
@@ -461,4 +536,3 @@ func (l List) sample2(s *sampler, below,above []float64) float64 {
 	}
 	return s.compare(floatSamplesBelow, logLikelihoodsBelow, logLikelihoodsAbove)[0]
 }
-

@@ -310,11 +310,13 @@ func (zf Lazy) Chain(zx Lazy) Lazy {
 func (zf Lazy) Kfold(seed int, kfold int, k int, name string) Lazy {
 	return func() lazy.Stream {
 		z := zf()
-		rnd := fu.NaiveRandom{Value:uint32(seed)}
-		ac := fu.AtomicCounter{Value:0}
-		wc := fu.WaitCounter{Value:0}
-		nx := make([]int,kfold)
-		for i := range nx { nx[i] = i }
+		rnd := fu.NaiveRandom{Value: uint32(seed)}
+		ac := fu.AtomicCounter{Value: 0}
+		wc := fu.WaitCounter{Value: 0}
+		nx := make([]int, kfold)
+		for i := range nx {
+			nx[i] = i
+		}
 		return func(index uint64) (v reflect.Value, err error) {
 			v, err = z(index)
 			if index == lazy.STOP {
@@ -323,10 +325,10 @@ func (zf Lazy) Kfold(seed int, kfold int, k int, name string) Lazy {
 			if wc.Wait(index) {
 				if err == nil && v.Kind() != reflect.Bool {
 					a := int(ac.PostInc())
-					if a % kfold == 0 {
+					if a%kfold == 0 {
 						for i := range nx {
-							j := int(rnd.Float()*float64(kfold))
-							nx[i],nx[j] = nx[j],nx[i]
+							j := int(rnd.Float() * float64(kfold))
+							nx[i], nx[j] = nx[j], nx[i]
 						}
 					}
 					lr := v.Interface().(fu.Struct)

@@ -18,32 +18,31 @@ const initialCapacity = 101
 /*
 	// detects compression automatically
     // can be gzip, bzip2, xz/lzma2
-	csv.Read(fu.Compressed("file.csv.xz"),
+	csv.Read(iokit.Compressed(iokit.File("file.csv.xz")),
 				csv.Float64("feature_1").As("Feature1"),
 				csv.Time("feature_2").Like(time.RFC3339Nano).As("Feature2"))
 
 	// will be downloaded every time
-	csv.Read(fu.External("s3://profile@bucket/testfile.csv.xz"))
+	csv.Read(iokit.Compressed(iokit.Url("s3://$/tests/testfile.csv.xz")))
 
 	// will be downloaded only once
-	csv.Read(fu.External("http://sudachen.xyz/testfile.xz",
-				fu.Cached("external-files/sudachen.xyz/testfile.xz")))
+	csv.Read(iokit.Compressed(
+				iokit.Url("http://sudachen.xyz/testfile.xz",
+					iokit.Cached("external-files/sudachen.xyz/testfile.xz"))))
 
 	// loads file from the Zip archive
-	csv.Read(fu.ZipFile("dataset1.csv","file.zip"))
+	csv.Read(iokit.ZipFile("dataset1.csv",iokit.File("file.zip")))
 
-	csv.Read(fu.ZipFile("dataset1.csv"
-				fu.External("http://sudachen.xyz/testfile.zip",
-					fu.Cached("external-files/sudachen.xyz/testfile.zip")))
-
-	csv.Read(fu.External("http://sudachen.xyz/testfile.xz",fu.Streamed))
+	csv.Read(iokit.ZipFile("dataset1.csv"
+				iokit.Url("http://sudachen.xyz/testfile.zip",
+					iokit.Cache("external-files/sudachen.xyz/testfile.zip")))
 
 	var csvContent =
     `s1,f_*,f_1,f_2
   	"the first",100,0,0.1
 	"another one",200,3,0.2`
 
-	csv.Read(fu.StringIO(csvContent),
+	csv.Read(iokit.StringIO(csvContent),
                 csv.TzeInt("f_**").As("Number"), // hide f_* for next rules
 				csv.Float64("f_*").As("Feature*"),
 				csv.String("s*").As("Text*"))
@@ -153,18 +152,18 @@ func lazyread(source iokit.Input, opts ...interface{}) tables.Lazy {
 }
 
 /*
-	csv.Write(t,"file.csv.xz",
+	csv.Write(t,iokit.File("file.csv.xz"),
 				csv.Column("feature_1").Round(2).As("Feature1"))
 
-	csv.Write(t,fu.Lzma2("file.csv.xz"),
+	csv.Write(t,iokit.LzmaFile("file.csv.xz"),
 				csv.Column("feature*").As("Feature*"))
 
 	bf := bytes.Buffer{}
-	csv.Write(t,fu.Gzip(&bf),
+	csv.Write(t,iokit.GzipWriter(&bf),
 				csv.Comma('|'),
 				csv.Column("feature*").Round(3).As("Feature*"))
 
-	csv.Write(t,fu.Lzma2(fu.External("gc://$/testfile.csv.xz")),
+	csv.Write(t,iokit.LzmaUrl("gc://$/testfile.csv.xz"),
 				csv.Comma('|'),
 				csv.Column("feature_1").As("Feature1"))
 */

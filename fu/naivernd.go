@@ -33,6 +33,8 @@ func (nr *NaiveRandom) Float() float64 {
 }
 
 func Seed(seed int) int {
-	if seed != 0 { return seed }
-	return int(time.Now().UnixNano()+int64(os.Getpid()))
+	if seed != 0 {
+		return seed
+	}
+	return int(time.Now().UnixNano() + int64(os.Getpid()))
 }

@@ -9,7 +9,7 @@ import (
 	"runtime"
 )
 
-type PredictionModel struct {
+type predictionModel struct {
 	features []string
 	predicts string
 	source   iokit.Input
@@ -33,15 +33,15 @@ func (x *xgbinstance) MapFeatures(t *tables.Table) (*tables.Table, error) {
 	return t.Except(x.features...).With(pred.AsColumn(), x.predicts), nil
 }
 
-func (model PredictionModel) Features() []string {
+func (model predictionModel) Features() []string {
 	return model.features
 }
 
-func (model PredictionModel) Predicted() string {
+func (model predictionModel) Predicted() string {
 	return model.predicts
 }
 
-func (model PredictionModel) FeaturesMapper(int) (fm tables.FeaturesMapper, err error) {
+func (model predictionModel) FeaturesMapper(int) (fm tables.FeaturesMapper, err error) {
 	var rd io.ReadCloser
 	if rd, err = model.source.Open(); err != nil {
 		return

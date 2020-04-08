@@ -292,7 +292,6 @@ func (c *Column) Floats() []float64 {
 	return c.ExtractAs(fu.Float64).([]float64)
 }
 
-
 /*
 Bool returns column' value converted to bool
 */
@@ -306,7 +305,6 @@ Bools extracts column' values as []bool
 func (c *Column) Bools() []bool {
 	return c.ExtractAs(fu.Bool).([]bool)
 }
-
 
 /*
 Interface returns column' value as is

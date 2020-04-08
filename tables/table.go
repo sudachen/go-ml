@@ -288,6 +288,20 @@ func New(o interface{}) *Table {
 	panic("bad argument type")
 }
 
+func NewEmpty(names []string, types []reflect.Type) *Table {
+	columns := make([]reflect.Value, len(names))
+	if types != nil {
+		for i := range columns {
+			columns[i] = reflect.MakeSlice(reflect.SliceOf(types[i]), 0, 0)
+		}
+	} else {
+		for i := range columns {
+			columns[i] = reflect.MakeSlice(reflect.SliceOf(fu.InterfaceType), 0, 0)
+		}
+	}
+	return MakeTable(names, columns, make([]fu.Bits, len(names)), 0)
+}
+
 /*
 Slice takes a row slice from table
 
@@ -625,7 +639,9 @@ func (t *Table) Index(r int) fu.Struct {
 
 func (t *Table) Last(n ...int) fu.Struct {
 	k := 1
-	if len(n) > 0 { k = n[0]+1 }
+	if len(n) > 0 {
+		k = n[0] + 1
+	}
 	return t.Index(t.Len() - k)
 }
 

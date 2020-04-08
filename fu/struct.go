@@ -2,7 +2,7 @@ package fu
 
 import (
 	"fmt"
-	"golang.org/x/xerrors"
+	"github.com/sudachen/go-zorros/zorros"
 	"reflect"
 	"strings"
 	"sync"
@@ -23,7 +23,7 @@ func (lr Struct) String() string {
 		}
 		r[i] = fmt.Sprintf("%v:%v", n, Ife(lr.Na.Bit(i), "N/A", v))
 	}
-	return "Struct{" + strings.Join(r, ",") + "}"
+	return "fu.Struct{" + strings.Join(r, ", ") + "}"
 }
 
 func (lr Struct) Copy(extra int) Struct {
@@ -103,7 +103,7 @@ func Unwrapper(v reflect.Type) func(lr Struct) reflect.Value {
 					}
 					if len(q) == 0 {
 						uwrpMu.Unlock()
-						panic(xerrors.Errorf("Struct does not have filed(s) matched to " + pat))
+						panic(zorros.Panic(zorros.Errorf("Struct does not have filed(s) matched to " + pat)))
 					}
 					if vt.Type.Kind() == reflect.Slice {
 						nd = append(nd, q)
@@ -222,3 +222,14 @@ func (lr Struct) Int(c string) int       { return lr.Index(c).Int() }
 func (lr Struct) Float(c string) float64 { return lr.Index(c).Float() }
 func (lr Struct) Real(c string) float32  { return lr.Index(c).Real() }
 func (lr Struct) Text(c string) string   { return lr.Index(c).Text() }
+
+func (lr Struct) Round(p int) Struct {
+	c := lr.Copy(0)
+	for i, v := range c.Columns {
+		switch v.Kind() {
+		case reflect.Float32, reflect.Float64:
+			c.Columns[i] = reflect.ValueOf(Round64(v.Float(), p))
+		}
+	}
+	return c
+}

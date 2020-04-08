@@ -21,7 +21,7 @@ var mnistMLP0 = nn.Connect(
 
 func Test_mnistMLP0(t *testing.T) {
 	modelFile := iokit.File(fu.ModelPath("mnist_test_mlp0.zip"))
-	metrics := nn.Model{
+	report := nn.Model{
 		Network:   mnistMLP0,
 		Optimizer: &nn.Adam{Lr: .001},
 		Loss:      &nn.LabelCrossEntropyLoss{},
@@ -34,15 +34,15 @@ func Test_mnistMLP0(t *testing.T) {
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.96})
+	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.96}, classification.ErrorScore)
 
-	fmt.Println(metrics)
-	assert.Assert(t, metrics.Last().Float("Accuracy") >= 0.96)
+	fmt.Println(report)
+	assert.Assert(t, classification.Accuracy(report.Test) >= 0.96)
 
 	net1 := nn.LuckyObjectify(modelFile) //.Gpu()
-	metrics1 := model.LuckyEvaluate(mnist.T10k, "Label", net1, 32, &classification.Metrics{})
-	fmt.Println(metrics1)
-	assert.Assert(t, metrics1.Last().Float("Accuracy") >= 0.96)
+	lr := model.LuckyEvaluate(mnist.T10k, "Label", net1, 32, &classification.Metrics{})
+	fmt.Println(lr)
+	assert.Assert(t, classification.Accuracy(lr) >= 0.96)
 }
 
 var mnistConv0 = nn.Connect(
@@ -56,7 +56,7 @@ var mnistConv0 = nn.Connect(
 func Test_mnistConv0(t *testing.T) {
 	modelFile := iokit.File(fu.ModelPath("mnist_test_conv0.zip"))
 
-	metrics := nn.Model{
+	report := nn.Model{
 		Network:   mnistConv0,
 		Optimizer: &nn.Adam{Lr: .001},
 		Loss:      &nn.LabelCrossEntropyLoss{},
@@ -69,37 +69,40 @@ func Test_mnistConv0(t *testing.T) {
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.98})
+	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.98}, classification.ErrorScore)
 
-	fmt.Println(metrics)
-	assert.Assert(t, metrics.Last().Float("Accuracy") >= 0.98)
+	fmt.Println(report.Score)
+	fmt.Println(report.History)
+	assert.Assert(t, classification.Accuracy(report.Test) >= 0.98)
 
 	net1 := nn.LuckyObjectify(modelFile) //.Gpu()
-	metrics1 := model.LuckyEvaluate(mnist.T10k, "Label", net1, 32, &classification.Metrics{})
-	fmt.Println(metrics1)
-	assert.Assert(t, metrics1.Last().Float("Accuracy") >= 0.98)
+	lr := model.LuckyEvaluate(mnist.T10k, "Label", net1, 32, &classification.Metrics{})
+	fmt.Println(lr)
+	assert.Assert(t, classification.Accuracy(lr) >= 0.98)
 }
 
 func Test_minstXgb(t *testing.T) {
 	modelFile := iokit.File(fu.ModelPath("mnist_test_xgb.zip"))
-	metrics := xgb.Model{
+	report := xgb.Model{
 		Algorithm:    xgb.TreeBoost,
 		Function:     xgb.Softmax,
-		LearningRate: 0.5,
-		MaxDepth:     6,
-		Estimators:   1,
+		LearningRate: 0.54,
+		MaxDepth:     7,
+		Estimators:   8,
+		Extra:        map[string]interface{}{"tree_method": "hist"},
 	}.Feed(model.Dataset{
 		Source:   mnist.Data.RandomFlag("Test", 42, 0.1),
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(30, modelFile, &classification.Metrics{Accuracy: 0.963})
+	}).LuckyFit(30, modelFile, &classification.Metrics{Accuracy: 0.96}, classification.AccuracyScore)
 
-	fmt.Println(metrics)
-	assert.Assert(t, metrics.Last().Float("Accuracy") >= 0.96)
+	fmt.Println(report.Score)
+	fmt.Println(report.History.Round(5))
+	assert.Assert(t, classification.Accuracy(report.Test) >= 0.96)
 
 	pred := xgb.LuckyObjectify(modelFile)
-	metrics1 := model.LuckyEvaluate(mnist.T10k, "Label", pred, 32, &classification.Metrics{})
-	fmt.Println(metrics1)
-	assert.Assert(t, metrics1.Last().Float("Accuracy") >= 0.96)
+	lr := model.LuckyEvaluate(mnist.T10k, "Label", pred, 32, &classification.Metrics{})
+	fmt.Println(lr.Round(5))
+	assert.Assert(t, classification.Accuracy(lr) >= 0.96)
 }

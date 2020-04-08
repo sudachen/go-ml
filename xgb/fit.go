@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/fu"
+	"github.com/sudachen/go-ml/fu/lazy"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/xgb/capi"
@@ -14,14 +15,22 @@ import (
 	"unsafe"
 )
 
-func fit(rounds int, e Model, dataset model.Dataset, output iokit.Output, mx ...model.Metrics) (metrics *tables.Table, err error) {
+func fit(rounds int, e Model, dataset model.Dataset, output iokit.Output, metricsf model.Metrics, scoref model.Score) (report model.Report, err error) {
+	historylen := metricsf.HistoryLength()
+	stash := model.NewStash(historylen, "xgb-model-stash-*")
+	defer stash.Close()
+
 	t, err := dataset.Source.Collect()
 	if err != nil {
 		return
 	}
+	Test := fu.Fnzs(dataset.Test, "Test")
+	if fu.IndexOf(Test, t.Names()) < 0 {
+		err = zorros.Errorf("dataset does not have column `%v`", Test)
+		return
+	}
 
 	features := t.OnlyNames(dataset.Features...)
-	// test if t.Col(dataset.Train) == true otherwise it's train
 	test, train, err := t.MatrixWithLabelIf(features, dataset.Label, dataset.Test, true)
 	if err != nil {
 		return
@@ -34,12 +43,7 @@ func fit(rounds int, e Model, dataset model.Dataset, output iokit.Output, mx ...
 
 	predicts := fu.Fnzs(e.Predicted, "Predicted")
 
-	var xgb *xgbinstance
-	if test.Length > 0 {
-		xgb = &xgbinstance{capi.Create2(m.handle, m2.handle), features, predicts}
-	} else {
-		xgb = &xgbinstance{capi.Create2(m.handle), features, predicts}
-	}
+	xgb := &xgbinstance{capi.Create2(m.handle, m2.handle), features, predicts}
 	defer xgb.Close()
 
 	if e.Algorithm != booster("") {
@@ -71,36 +75,78 @@ func fit(rounds int, e Model, dataset model.Dataset, output iokit.Output, mx ...
 		capi.SetParam(xgb.handle, "num_class", fmt.Sprint(x+1))
 	}
 
-	perflog := []*fu.Struct{}
-	var testLabels, trainLabels *tables.Column
-	if len(mx) > 0 {
-		testLabels = test.AsLabelColumn()
-		trainLabels = train.AsLabelColumn()
-	}
+	perflog := [][2]fu.Struct{}
+	scorlog := []float64{}
+	testLabels := test.AsLabelColumn()
+	trainLabels := train.AsLabelColumn()
+	rounds = fu.Maxi(rounds, 1)
+	var o iokit.Output
 
 	for i := 0; i < rounds; i++ {
 		capi.Update(xgb.handle, i, m.handle)
-		if len(mx) > 0 {
-			done := false
-			xgb.evalMetrics(i, false, m.handle, trainLabels, &perflog, model.Measurer(mx))
-			if test.Length > 0 {
-				done = xgb.evalMetrics(i, true, m2.handle, testLabels, &perflog, model.Measurer(mx))
-			}
-			if done {
+		done := false
+		lr := [2]fu.Struct{}
+		lr[0], _ = xgb.evalMetrics(i, model.Train, m.handle, trainLabels, metricsf)
+		lr[1], done = xgb.evalMetrics(i, model.Test, m2.handle, testLabels, metricsf)
+		score := scoref(lr[0], lr[1])
+		//verbose.Printf("fit [%3d] train %v",i,lr[0])
+		//verbose.Printf("fit [%3d] test %v",i,lr[0])
+		//verbose.Printf("fit [%3d] score %v",i,score)
+		if len(scorlog) > historylen {
+			q := len(scorlog) - historylen
+			if fu.Maxd(0, scorlog[:q]...) >= fu.Maxd(score, scorlog[q:]...) {
 				break
 			}
+		}
+		if o, err = stash.Output(i); err != nil {
+			return
+		}
+		if err = model.Memorize(o, model.MemorizeMap{"model": mnemosyne{xgb}}); err != nil {
+			return
+		}
+		scorlog = append(scorlog, score)
+		perflog = append(perflog, lr)
+		if done {
+			break
 		}
 	}
 
 	if len(perflog) > 0 {
-		metrics = tables.New(perflog)
+		report.History = tables.Lazy(lazy.Flatn(perflog)).LuckyCollect()
+		j := len(scorlog) - stash.Length()
+		i := fu.Indmaxd(scorlog[j:]) + j
+		report.Train = perflog[i][0]
+		report.Test = perflog[i][1]
+		report.Score = scorlog[i]
+		if output != nil {
+			rd, e := stash.Reader(i)
+			if e != nil {
+				err = zorros.Trace(e)
+				return
+			}
+			wh, e := output.Create()
+			if e != nil {
+				err = zorros.Trace(e)
+				return
+			}
+			defer wh.End()
+			_, e = io.Copy(wh, rd)
+			if e != nil {
+				err = zorros.Trace(e)
+				return
+			}
+			if e = wh.Commit(); e != nil {
+				err = zorros.Trace(e)
+				return
+			}
+		}
+	} else {
+		report.History = tables.NewEmpty(metricsf.Names(), nil)
 	}
-
-	err = model.Memorize(output, model.MemorizeMap{"model": mnemosyne{xgb}})
 	return
 }
 
-func (xgb *xgbinstance) evalMetrics(i int, testSubset bool, m unsafe.Pointer, labels *tables.Column, log *[]*fu.Struct, mr model.Measurer) bool {
+func (xgb *xgbinstance) evalMetrics(i int, subset string, m unsafe.Pointer, labels *tables.Column, metricsf model.Metrics) (fu.Struct, bool) {
 	y := capi.Predict(xgb.handle, m, 0)
 	pred := tables.Matrix{
 		Features:    y,
@@ -109,10 +155,7 @@ func (xgb *xgbinstance) evalMetrics(i int, testSubset bool, m unsafe.Pointer, la
 		Length:      labels.Len(),
 		LabelsWidth: 0,
 	}
-	subset := fu.Ifes(testSubset, model.MetricsTestSubset, model.MetricsTrainSubset)
-	line, done := mr.Iterate(i, subset, pred.AsColumn(), labels)
-	*log = append(*log, &line)
-	return done
+	return model.EvaluateMetrics(i, subset, pred.AsColumn(), labels, metricsf)
 }
 
 type mnemosyne struct{ *xgbinstance }

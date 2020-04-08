@@ -17,7 +17,9 @@ type MemorizeMap map[string]Mnemosyne
 type ObjectifyMap map[string]func(map[string]iokit.Input) (PredictionModel, error)
 
 func Memorize(output iokit.Output, m MemorizeMap) error {
-	if output == nil { return nil }
+	if output == nil {
+		return nil
+	}
 	f, err := output.Create()
 	if err != nil {
 		return zorros.Trace(err)

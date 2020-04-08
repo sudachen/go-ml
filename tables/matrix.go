@@ -47,7 +47,7 @@ the first one contains samples with column ifName equal ifValue
 the second one - samples with column ifName not equal ifValue
 */
 func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string, ifValue interface{}, least ...int) (test, train Matrix, err error) {
-	L := [2]int{0,t.Len()}
+	L := [2]int{0, t.Len()}
 	filter := func(int) int { return 1 }
 	if ifName != "" {
 		if tc, ok := t.ColIfExists(ifName); ok {
@@ -76,7 +76,7 @@ func (t *Table) MatrixWithLabelIf(features []string, label string, ifName string
 				}
 			}
 			l := t.Len()
-			L = [2]int{0,0}
+			L = [2]int{0, 0}
 			for i := 0; i < l; i++ {
 				L[filter(i)]++
 			}

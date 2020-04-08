@@ -26,19 +26,34 @@ Range is a open float range specified by min and max values (min,max)
 type Range [2]float64
 
 /*
+LogRange is a open float logarithmic range specified by min and max values (min,max)
+*/
+type LogRange [2]float64
+
+/*
 IntRange is a close integer range specified by min and max values [min,max]
 */
 type IntRange [2]int
+
+/*
+LogRange is a close logarithmic integer range specified by min and max values [min,max]
+*/
+type LogIntRange [2]int
 
 /*
 List is a list of possible parameter values
 */
 type List []float64
 
+/*
+Value is a single value parameter
+*/
+type Value float64
+
 // type limitation interface
-type distribution interface{
-	sample1(*sampler)float64
-	sample2(*sampler,[]float64,[]float64)float64
+type distribution interface {
+	sample1(*sampler) float64
+	sample2(*sampler, []float64, []float64) float64
 }
 
 /*
@@ -50,6 +65,7 @@ type Variance map[string]distribution
 Direction is an optimization direction
 */
 type Direction int
+
 const (
 	// Minimize Score with respect to parameters
 	MinimizeScore Direction = iota
@@ -70,13 +86,16 @@ type BestParams struct {
 	Score float64
 }
 
-type KfoldMetrics struct { Test, Train fu.Struct }
+type KfoldMetrics struct {
+	Test, Train fu.Struct
+	Score       float64
+}
 type TrailMetrics []*KfoldMetrics
 
 /*
 MetricsScore is a function-type of Score estimator of the fitting metrics
 */
-type MetricsScore func(TrailMetrics,Direction)float64
+type MetricsScore func(TrailMetrics, Direction) float64
 
 /*
 Space is a definition of hyper-parameters optimization space
@@ -89,14 +108,13 @@ type Space struct {
 	Kfold      int            // count of dataset folds
 	Iterations int            // model fitting iterations
 	Metrics    model.Metrics  // model evaluation metrics
-	Score      MetricsScore   // function to calculate score of metrics
-	Direction  Direction      // optimization direction - maximize or minimize score
+	Score      model.Score    // function to calculate score of train/test metrics
 
 	// the model generation function
-	ModelFunc  func(Params) model.HungryModel
+	ModelFunc func(Params) model.HungryModel
 
 	// hyper-parameters variance
-	Variance   Variance
+	Variance Variance
 }
 
 /*
@@ -104,9 +122,11 @@ Apply apples params to a model
 */
 func Apply(m interface{}, p Params) {
 	x := reflect.ValueOf(m).Elem()
-	for k,v := range p {
+	for k, v := range p {
 		z := x.FieldByName(k)
-		if !z.IsValid() { panic(zorros.Panic(zorros.Errorf("model does not have field `%v`",k))) }
-		z.Set(fu.Convert(reflect.ValueOf(v),false, z.Type()))
+		if !z.IsValid() {
+			panic(zorros.Panic(zorros.Errorf("model does not have field `%v`", k)))
+		}
+		z.Set(fu.Convert(reflect.ValueOf(v), false, z.Type()))
 	}
 }

@@ -176,6 +176,25 @@ func List(list interface{}) Source {
 	}
 }
 
+func Flatn(listarr interface{}) Source {
+	return func() Stream {
+		t := reflect.TypeOf(listarr)
+		if t.Kind() != reflect.Slice || t.Elem().Kind() != reflect.Array {
+			panic(zorros.Panic(zorros.Errorf("only [][n]any allowed but %v occured", t)))
+		}
+		v := reflect.ValueOf(listarr)
+		n := t.Elem().Len()
+		l := v.Len()
+		return func(index uint64) (reflect.Value, error) {
+			if index >= uint64(n*l) {
+				return fu.False, nil
+			}
+			i := int(index)
+			return v.Index(i / n).Index(i % n), nil
+		}
+	}
+}
+
 const iniCollectLength = 13
 
 func (zf Source) Collect() (r interface{}, err error) {
