@@ -180,7 +180,7 @@ func Flatn(listarr interface{}) Source {
 	return func() Stream {
 		t := reflect.TypeOf(listarr)
 		if t.Kind() != reflect.Slice || t.Elem().Kind() != reflect.Array {
-			panic(zorros.Panic(zorros.Errorf("only [][n]any allowed but %v occured", t)))
+			panic(zorros.Panic(zorros.Errorf("only [][n]any allowed but %v occurred", t)))
 		}
 		v := reflect.ValueOf(listarr)
 		n := t.Elem().Len()
