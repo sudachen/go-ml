@@ -70,22 +70,22 @@ func (c *AtomicFlag) State() bool {
 /*
 AtomicSingleIndex - it's an atomic positive integer single set value
 */
-type AtomicSingleIndex struct {v uint64}
+type AtomicSingleIndex struct{ v uint64 }
 
 /*
 Get returns index value
 */
 func (c *AtomicSingleIndex) Get() (int, bool) {
 	v := atomic.LoadUint64(&c.v)
-	return int(v-1), v != 0
+	return int(v - 1), v != 0
 }
 
 /*
 Set sets value if it was not set before
 */
-func (c *AtomicSingleIndex) Set(value int) (int,bool) {
-	if  atomic.CompareAndSwapUint64(&c.v,0, uint64(value)+1) {
+func (c *AtomicSingleIndex) Set(value int) (int, bool) {
+	if atomic.CompareAndSwapUint64(&c.v, 0, uint64(value)+1) {
 		return value, true
 	}
-	return int(atomic.LoadUint64(&c.v)-1), false
+	return int(atomic.LoadUint64(&c.v) - 1), false
 }

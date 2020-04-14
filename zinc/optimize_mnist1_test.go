@@ -42,9 +42,9 @@ func Test_Optimize_Mnist1(t *testing.T) {
 		Features: mnist.Features,
 	}).LuckyTrain(model.Training{
 		Iterations: 10,
-		ModelFile: modelFile,
-		Metrics: &classification.Metrics{},
-		Score: classification.AccuracyScore,
+		ModelFile:  modelFile,
+		Metrics:    &classification.Metrics{},
+		Score:      classification.AccuracyScore,
 	})
 
 	fmt.Println(report.History.Round(4))

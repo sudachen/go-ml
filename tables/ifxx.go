@@ -7,12 +7,12 @@ import (
 	"reflect"
 )
 
-func equalf(c interface{}) func(v reflect.Value)bool{
+func equalf(c interface{}) func(v reflect.Value) bool {
 	vc := reflect.ValueOf(c)
 	switch vc.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		vv := vc.Int()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return int64(v.Float()) == vv
@@ -25,7 +25,7 @@ func equalf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		vv := vc.Uint()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return uint64(v.Float()) == vv
@@ -38,30 +38,30 @@ func equalf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.String:
 		vv := vc.String()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				return fmt.Sprintf("%d",v.Uint()) == vv
+				return fmt.Sprintf("%d", v.Uint()) == vv
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				return fmt.Sprintf("%d",v.Int()) == vv
+				return fmt.Sprintf("%d", v.Int()) == vv
 			case reflect.String:
 				return vv == v.String()
 			}
 			return false
 		}
 	default:
-		return func(v reflect.Value)bool {
-			return reflect.DeepEqual(v,vc)
+		return func(v reflect.Value) bool {
+			return reflect.DeepEqual(v, vc)
 		}
 	}
 }
 
-func lessf(c interface{}) func(v reflect.Value)bool{
+func lessf(c interface{}) func(v reflect.Value) bool {
 	vc := reflect.ValueOf(c)
 	switch vc.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		vv := vc.Int()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return int64(v.Float()) < vv
@@ -74,7 +74,7 @@ func lessf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		vv := vc.Uint()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return uint64(v.Float()) < vv
@@ -87,25 +87,25 @@ func lessf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.String:
 		vv := vc.String()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			if v.Kind() == reflect.String {
 				return vv < v.String()
 			}
 			return false
 		}
 	default:
-		return func(v reflect.Value)bool {
-			return fu.Less(v,vc)
+		return func(v reflect.Value) bool {
+			return fu.Less(v, vc)
 		}
 	}
 }
 
-func greatf(c interface{}) func(v reflect.Value)bool{
+func greatf(c interface{}) func(v reflect.Value) bool {
 	vc := reflect.ValueOf(c)
 	switch vc.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		vv := vc.Int()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return int64(v.Float()) > vv
@@ -118,7 +118,7 @@ func greatf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		vv := vc.Uint()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			switch v.Kind() {
 			case reflect.Float64, reflect.Float32:
 				return uint64(v.Float()) > vv
@@ -131,15 +131,15 @@ func greatf(c interface{}) func(v reflect.Value)bool{
 		}
 	case reflect.String:
 		vv := vc.String()
-		return func(v reflect.Value)bool {
+		return func(v reflect.Value) bool {
 			if v.Kind() > reflect.String {
 				return vv < v.String()
 			}
 			return false
 		}
 	default:
-		return func(v reflect.Value)bool {
-			return fu.Less(vc,v)
+		return func(v reflect.Value) bool {
+			return fu.Less(vc, v)
 		}
 	}
 }
@@ -151,13 +151,17 @@ func (zf Lazy) IfEq(c string, v interface{}) Lazy {
 		z := zf()
 		nx := fu.AtomicSingleIndex{}
 		return func(index uint64) (v reflect.Value, err error) {
-			if v, err = z(index); err != nil || v.Kind() == reflect.Bool { return }
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return
+			}
 			lr := v.Interface().(fu.Struct)
 			j, ok := nx.Get()
 			if !ok {
 				j, _ = nx.Set(lr.Pos(c))
 			}
-			if eq(lr.ValueAt(j)) { return }
+			if eq(lr.ValueAt(j)) {
+				return
+			}
 			return fu.True, nil
 		}
 	}
@@ -170,13 +174,17 @@ func (zf Lazy) IfNe(c string, v interface{}) Lazy {
 		z := zf()
 		nx := fu.AtomicSingleIndex{}
 		return func(index uint64) (v reflect.Value, err error) {
-			if v, err = z(index); err != nil || v.Kind() == reflect.Bool { return }
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return
+			}
 			lr := v.Interface().(fu.Struct)
 			j, ok := nx.Get()
 			if !ok {
 				j, _ = nx.Set(lr.Pos(c))
 			}
-			if !eq(lr.ValueAt(j)) { return }
+			if !eq(lr.ValueAt(j)) {
+				return
+			}
 			return fu.True, nil
 		}
 	}
@@ -189,13 +197,17 @@ func (zf Lazy) IfLt(c string, v interface{}) Lazy {
 		z := zf()
 		nx := fu.AtomicSingleIndex{}
 		return func(index uint64) (v reflect.Value, err error) {
-			if v, err = z(index); err != nil || v.Kind() == reflect.Bool { return }
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return
+			}
 			lr := v.Interface().(fu.Struct)
 			j, ok := nx.Get()
 			if !ok {
 				j, _ = nx.Set(lr.Pos(c))
 			}
-			if lt(lr.ValueAt(j)) { return }
+			if lt(lr.ValueAt(j)) {
+				return
+			}
 			return fu.True, nil
 		}
 	}
@@ -208,13 +220,17 @@ func (zf Lazy) IfGt(c string, v interface{}) Lazy {
 		z := zf()
 		nx := fu.AtomicSingleIndex{}
 		return func(index uint64) (v reflect.Value, err error) {
-			if v, err = z(index); err != nil || v.Kind() == reflect.Bool { return }
+			if v, err = z(index); err != nil || v.Kind() == reflect.Bool {
+				return
+			}
 			lr := v.Interface().(fu.Struct)
 			j, ok := nx.Get()
 			if !ok {
 				j, _ = nx.Set(lr.Pos(c))
 			}
-			if gt(lr.ValueAt(j)) { return }
+			if gt(lr.ValueAt(j)) {
+				return
+			}
 			return fu.True, nil
 		}
 	}

@@ -24,14 +24,14 @@ type Training struct {
 type training struct {
 	Training
 	stash *ModelStash
-	done bool
+	done  bool
 }
 
 type workout struct {
 	iteration int
-	training *training
-	perflog [][2]fu.Struct
-	scorlog []float64
+	training  *training
+	perflog   [][2]fu.Struct
+	scorlog   []float64
 }
 
 const DefaultScoreHistory = 3
@@ -39,7 +39,7 @@ const DefaultScoreHistory = 3
 func (t Training) Workout() Workout {
 	x := &training{
 		Training: t,
-		stash: NewStash(fu.Fnzi(t.ScoreHistory,DefaultScoreHistory), "model-treaining-*.zip"),
+		stash:    NewStash(fu.Fnzi(t.ScoreHistory, DefaultScoreHistory), "model-treaining-*.zip"),
 	}
 	return &workout{iteration: 0, training: x}
 }
@@ -53,21 +53,21 @@ func (w *workout) Iteration() int {
 }
 
 func (w *workout) TrainMetrics() MetricsUpdater {
-	return w.training.Metrics.New(w.iteration,TrainSubset)
+	return w.training.Metrics.New(w.iteration, TrainSubset)
 }
 
 func (w *workout) TestMetrics() MetricsUpdater {
-	return w.training.Metrics.New(w.iteration,TestSubset)
+	return w.training.Metrics.New(w.iteration, TestSubset)
 }
 
 func (w *workout) report(j int) (report *Report, err error) {
 	report = &Report{}
-	histlen := fu.Fnzi(w.training.ScoreHistory,DefaultScoreHistory)
+	histlen := fu.Fnzi(w.training.ScoreHistory, DefaultScoreHistory)
 	if len(w.perflog) > 0 {
 		report.History = tables.Lazy(lazy.Flatn(w.perflog)).LuckyCollect()
 		if j == 0 {
 			l := fu.Mini(len(w.scorlog), histlen)
-			lj := len(w.scorlog)-l
+			lj := len(w.scorlog) - l
 			j = fu.Rindmaxd(w.scorlog[lj:]) + lj
 		}
 		report.TheBest = j
@@ -103,15 +103,20 @@ func (w *workout) report(j int) (report *Report, err error) {
 }
 
 func (w *workout) Complete(m MemorizeMap, train, test fu.Struct, metricsDone bool) (report *Report, done bool, err error) {
-	histlen := fu.Fnzi(w.training.ScoreHistory,DefaultScoreHistory)
-	maxiter := fu.Maxi(w.training.Iterations,1)
-	score := w.training.Score(train,test)
+	histlen := fu.Fnzi(w.training.ScoreHistory, DefaultScoreHistory)
+	maxiter := fu.Maxi(w.training.Iterations, 1)
+	score := w.training.Score(train, test)
 	w.scorlog = append(w.scorlog, score)
-	w.perflog = append(w.perflog, [2]fu.Struct{train,test})
+	w.perflog = append(w.perflog, [2]fu.Struct{train, test})
 	if w.training.ModelFile != nil {
 		o, e := w.training.stash.Output(w.iteration)
-		if e != nil { err = zorros.Wrapf(e, "failed to create stash for model: %v", e.Error()); return }
-		if err = Memorize(o, m); err != nil { return }
+		if e != nil {
+			err = zorros.Wrapf(e, "failed to create stash for model: %v", e.Error())
+			return
+		}
+		if err = Memorize(o, m); err != nil {
+			return
+		}
 	}
 	if metricsDone {
 		w.training.done = true
@@ -133,8 +138,8 @@ func (w *workout) Next() Workout {
 	}
 	return &workout{
 		iteration: w.iteration + 1,
-		training: w.training,
-		scorlog: w.scorlog,
-		perflog: w.perflog,
+		training:  w.training,
+		scorlog:   w.scorlog,
+		perflog:   w.perflog,
 	}
 }

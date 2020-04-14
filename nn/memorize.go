@@ -35,4 +35,3 @@ func (mm mnemosyne) Memorize(c *model.CollectionWriter) (err error) {
 	}
 	return
 }
-

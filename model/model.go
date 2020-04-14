@@ -54,7 +54,7 @@ Train a fattened (Fat) model
 */
 func (f FatModel) Train(training UnifiedTraining) (*Report, error) {
 	w := training.Workout()
-	if c,ok := w.(io.Closer); ok {
+	if c, ok := w.(io.Closer); ok {
 		defer c.Close()
 	}
 	return f(w)

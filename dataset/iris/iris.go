@@ -14,7 +14,7 @@ func source(x string) iokit.Input {
 }
 
 var dataset = source("iris.csv")
-var Features = []string{"Feature1","Feature2","Feature3","Feature4"}
+var Features = []string{"Feature1", "Feature2", "Feature3", "Feature4"}
 
 var Data tables.Lazy = func() lazy.Stream {
 	var cls = tables.Enumset{}

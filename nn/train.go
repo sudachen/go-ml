@@ -22,7 +22,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 		return
 	}
 
-	Label := fu.Fnzs(dataset.Label,model.LabelCol)
+	Label := fu.Fnzs(dataset.Label, model.LabelCol)
 	if fu.IndexOf(Label, t.Names()) < 0 {
 		err = zorros.Errorf("dataset does not have column `%v`", Label)
 		return
@@ -35,7 +35,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 	full := dataset.Source.Lazy().Batch(e.BatchSize).Parallel()
 	out := make([]float32, network.Graph.Output.Dim().Total())
 
-	for done := false; w != nil && !done ; w = w.Next() {
+	for done := false; w != nil && !done; w = w.Next() {
 		opt := e.Optimizer.Init(w.Iteration())
 
 		if err = train.Drain(func(value reflect.Value) error {
@@ -81,7 +81,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 
 		lr0, _ := trainmu.Complete()
 		lr1, d := testmu.Complete()
-		memorize := model.MemorizeMap{"model":  mnemosyne{network, features, predicts}}
+		memorize := model.MemorizeMap{"model": mnemosyne{network, features, predicts}}
 		if report, done, err = w.Complete(memorize, lr0, lr1, d); err != nil {
 			return nil, zorros.Wrapf(err, "tailed to complete model: %s", err.Error())
 		}
@@ -89,4 +89,3 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 
 	return
 }
-

@@ -36,9 +36,9 @@ func Test_mnistMLP0(t *testing.T) {
 		Features: []string{"Image"},
 	}).LuckyTrain(model.Training{
 		Iterations: 5,
-		ModelFile: modelFile,
-		Metrics: &classification.Metrics{Accuracy: 0.961},
-		Score: classification.ErrorScore,
+		ModelFile:  modelFile,
+		Metrics:    &classification.Metrics{Accuracy: 0.961},
+		Score:      classification.ErrorScore,
 	})
 
 	fmt.Println(report.TheBest, report.Score)
@@ -77,9 +77,9 @@ func Test_mnistConv0(t *testing.T) {
 		Features: []string{"Image"},
 	}).LuckyTrain(model.Training{
 		Iterations: 15,
-		ModelFile: modelFile,
-		Metrics: &classification.Metrics{Accuracy: 0.981},
-		Score: classification.ErrorScore,
+		ModelFile:  modelFile,
+		Metrics:    &classification.Metrics{Accuracy: 0.981},
+		Score:      classification.ErrorScore,
 	})
 
 	fmt.Println(report.TheBest, report.Score)
@@ -106,9 +106,9 @@ func Test_minstXgb(t *testing.T) {
 		Features: mnist.Features,
 	}).LuckyTrain(model.Training{
 		Iterations: 30,
-		ModelFile: modelFile,
-		Metrics: &classification.Metrics{Accuracy: 0.96},
-		Score: classification.AccuracyScore,
+		ModelFile:  modelFile,
+		Metrics:    &classification.Metrics{Accuracy: 0.96},
+		Score:      classification.AccuracyScore,
 	})
 
 	fmt.Println(report.TheBest, report.Score)

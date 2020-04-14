@@ -66,7 +66,7 @@ func (ss Space) Optimize(trails int) (best BestParams, err error) {
 		return
 	}
 
-	Label := fu.Fnzs(ss.Label,model.LabelCol)
+	Label := fu.Fnzs(ss.Label, model.LabelCol)
 
 	opt := &optimizer{}
 	seed := fu.Seed(ss.Seed)
@@ -91,14 +91,14 @@ func (ss Space) Optimize(trails int) (best BestParams, err error) {
 				Features: ss.Features,
 				Test:     kfoldTest,
 			}).Train(model.Training{
-				Iterations:   ss.Iterations,
-				Metrics:      ss.Metrics,
-				Score:        ss.Score,
+				Iterations: ss.Iterations,
+				Metrics:    ss.Metrics,
+				Score:      ss.Score,
 			})
 			if err != nil {
 				return
 			}
-			t := &kfoldMetrics{report.Test,report.Train,report.Score}
+			t := &kfoldMetrics{report.Test, report.Train, report.Score}
 			trail = append(trail, t)
 			verbose.Printf("[%3d/%3d] k-fold test: %v", rno, k, t.Test)
 			verbose.Printf("[%3d/%3d] k-fold train: %v", rno, k, t.Train)

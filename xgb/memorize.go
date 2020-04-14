@@ -46,4 +46,3 @@ func (x mnemosyne) Memorize(c *model.CollectionWriter) (err error) {
 	}
 	return
 }
-

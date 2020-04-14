@@ -23,7 +23,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 		return
 	}
 
-	Label := fu.Fnzs(dataset.Label,model.LabelCol)
+	Label := fu.Fnzs(dataset.Label, model.LabelCol)
 	if fu.IndexOf(Label, t.Names()) < 0 {
 		err = zorros.Errorf("dataset does not have column `%v`", Label)
 		return
@@ -77,7 +77,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 	testLabels := test.AsLabelColumn()
 	trainLabels := train.AsLabelColumn()
 
-	for done := false; w != nil && !done ; w = w.Next() {
+	for done := false; w != nil && !done; w = w.Next() {
 		capi.Update(xgb.handle, w.Iteration(), m.handle)
 		m0, _ := xgb.metrics(m.handle, trainLabels, w.TrainMetrics())
 		m1, d := xgb.metrics(m2.handle, testLabels, w.TestMetrics())
