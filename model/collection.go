@@ -9,13 +9,26 @@ import (
 	"path/filepath"
 )
 
+/*
+Mnemosyne is a Serialization interface for an ML model parts
+*/
 type Mnemosyne interface {
 	Memorize(*CollectionWriter) error
 }
 
+/*
+MemorizeMap maps names of models in directory to Mnemosyne abstraction
+*/
 type MemorizeMap map[string]Mnemosyne
+
+/*
+ObjectifyMap mpas names of models in directory to objectification functions
+*/
 type ObjectifyMap map[string]func(map[string]iokit.Input) (PredictionModel, error)
 
+/*
+Memorize writes models directory to single output
+*/
 func Memorize(output iokit.Output, m MemorizeMap) error {
 	if output == nil {
 		return nil
@@ -42,15 +55,24 @@ func Memorize(output iokit.Output, m MemorizeMap) error {
 	return nil
 }
 
+/*
+CollectionWriter is an abstraction of a collection creator
+*/
 type CollectionWriter struct {
 	wz *zip.Writer
 	k  string
 }
 
+/*
+Add an element to collection
+*/
 func (c *CollectionWriter) Add(name string, write func(io.Writer) error) error {
 	return c.add(name, false, write)
 }
 
+/*
+Add an Lzma2 compressed element to collection
+*/
 func (c *CollectionWriter) AddLzma2(name string, write func(io.Writer) error) error {
 	return c.add(name, true, write)
 }
@@ -84,6 +106,9 @@ func (c *CollectionWriter) add(name string, lzma2 bool, write func(io.Writer) er
 	return nil
 }
 
+/*
+Objectify reads and reconstructs prediction models from a directory
+*/
 func Objectify(input iokit.Input, m ObjectifyMap) (pm map[string]PredictionModel, err error) {
 	var r *zip.Reader
 	f, err := input.Open()

@@ -18,8 +18,7 @@ func Test_Optimize_Mnist1(t *testing.T) {
 
 	par := hyperopt.Space{
 		Source:     mnist.Data.Rand(13, 0.35),
-		Features:   []string{"Image"},
-		Label:      "Label",
+		Features:   mnist.Features,
 		Kfold:      3,
 		Iterations: 19,
 		Metrics:    &classification.Metrics{},
@@ -34,16 +33,19 @@ func Test_Optimize_Mnist1(t *testing.T) {
 
 	fmt.Println(par)
 
-	modelFile := iokit.File(fu.ModelPath("xgboost_mnist_v1.xgb"))
+	modelFile := iokit.File(fu.ModelPath("xgboost_mnist_v1.zip"))
 	report := xgb.Model{
 		Algorithm: xgb.TreeBoost,
 		Function:  xgb.Softmax,
 	}.Apply(par.Params).Feed(model.Dataset{
-		Source:   mnist.T10k.RandomFlag("Test", 42, 0.2),
-		Label:    "Label",
-		Test:     "Test",
-		Features: []string{"Image"},
-	}).LuckyFit(30, modelFile, &classification.Metrics{}, classification.AccuracyScore)
+		Source:   mnist.T10k.RandomFlag(model.TestCol, 42, 0.2),
+		Features: mnist.Features,
+	}).LuckyTrain(model.Training{
+		Iterations: 10,
+		ModelFile: modelFile,
+		Metrics: &classification.Metrics{},
+		Score: classification.AccuracyScore,
+	})
 
 	fmt.Println(report.History.Round(4))
 }

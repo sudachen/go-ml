@@ -35,16 +35,16 @@ func buildEstimator(mus []float64, low float64, high float64, s *sampler) estima
 		} else {
 			order = make([]int, len(mus))
 			floats.Argsort(mus, order)
-			priorPos = Location(Choice(mus, order), priorMu)
+			priorPos = location(choice(mus, order), priorMu)
 			sortedMus = make([]float64, 0, len(mus)+1)
-			sortedMus = append(sortedMus, Choice(mus, order[:priorPos])...)
+			sortedMus = append(sortedMus, choice(mus, order[:priorPos])...)
 			sortedMus = append(sortedMus, priorMu)
-			sortedMus = append(sortedMus, Choice(mus, order[priorPos:])...)
+			sortedMus = append(sortedMus, choice(mus, order[priorPos:])...)
 		}
 	} else {
 		order = make([]int, len(mus))
 		floats.Argsort(mus, order)
-		sortedMus = Choice(mus, order)
+		sortedMus = choice(mus, order)
 	}
 
 	// we decide the sigma.
@@ -68,11 +68,11 @@ func buildEstimator(mus []float64, low float64, high float64, s *sampler) estima
 	unsortedWeights := weights(len(mus))
 	if considerPrior {
 		sortedWeights = make([]float64, 0, len(sortedMus))
-		sortedWeights = append(sortedWeights, Choice(unsortedWeights, order[:priorPos])...)
+		sortedWeights = append(sortedWeights, choice(unsortedWeights, order[:priorPos])...)
 		sortedWeights = append(sortedWeights, priorWeight)
-		sortedWeights = append(sortedWeights, Choice(unsortedWeights, order[priorPos:])...)
+		sortedWeights = append(sortedWeights, choice(unsortedWeights, order[priorPos:])...)
 	} else {
-		sortedWeights = Choice(unsortedWeights, order)
+		sortedWeights = choice(unsortedWeights, order)
 	}
 	sumSortedWeights := floats.Sum(sortedWeights)
 	for i := range sortedWeights {
@@ -87,7 +87,7 @@ func buildEstimator(mus []float64, low float64, high float64, s *sampler) estima
 	} else {
 		minSigma = epsilon
 	}
-	Clip(sigma, minSigma, maxSigma)
+	clip(sigma, minSigma, maxSigma)
 	if considerPrior {
 		sigma[priorPos] = priorSigma
 	}

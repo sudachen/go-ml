@@ -1,11 +1,10 @@
-package zinc
+package tests
 
 import (
 	"fmt"
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/dataset/iris"
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/fu/verbose"
 	"github.com/sudachen/go-ml/metrics/classification"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/model/hyperopt"
@@ -14,15 +13,14 @@ import (
 )
 
 func Test_Optimize_Iris1(t *testing.T) {
-	defer verbose.BeVerbose(verbose.Print).Revert()
+	//defer verbose.BeVerbose(verbose.Print).Revert()
 
 	par := hyperopt.Space{
 		Source:     iris.Data,
-		Features:   []string{"Feature*"},
-		Label:      "Label",
+		Features:   iris.Features,
 		Kfold:      3,
 		Iterations: 19,
-		Metrics:    &classification.Metrics{History: 2},
+		Metrics:    &classification.Metrics{},
 		Score:      classification.AccuracyScore,
 		ModelFunc:  xgb.Model{Algorithm: xgb.LinearBoost, Function: xgb.Softmax}.ModelFunc,
 		Variance: hyperopt.Variance{
@@ -39,11 +37,14 @@ func Test_Optimize_Iris1(t *testing.T) {
 		Algorithm: xgb.TreeBoost,
 		Function:  xgb.Softmax,
 	}.Apply(par.Params).Feed(model.Dataset{
-		Source:   iris.Data.RandomFlag("Test", 42, 0.2),
-		Label:    "Label",
-		Test:     "Test",
-		Features: []string{"Feature*"},
-	}).LuckyFit(30, modelFile, &classification.Metrics{History: 5}, classification.AccuracyScore)
+		Source:   iris.Data.RandomFlag(model.TestCol, 42, 0.2),
+		Features: iris.Features,
+	}).LuckyTrain(model.Training{
+		Iterations: 30,
+		ModelFile:  modelFile,
+		Metrics:    &classification.Metrics{},
+		Score:      classification.AccuracyScore,
+	})
 
 	fmt.Println(report.History.Round(4))
 }

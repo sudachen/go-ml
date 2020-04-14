@@ -2,7 +2,7 @@ package mx
 
 import "github.com/sudachen/go-ml/nn/mx/capi"
 
-func SgdMomUpdate(params, grads, mom *NDArray, lr, momentum, wd float32) {
+func SgdMomUpdate(params, grads, mom *NDArray, lr, momentum, wd float64) {
 	capi.OptimizerUpdate(
 		capi.OpSgdMomUpdate,
 		params.handle, grads.handle, mom.handle, nil,
@@ -11,7 +11,7 @@ func SgdMomUpdate(params, grads, mom *NDArray, lr, momentum, wd float32) {
 		capi.KeyWd, wd)
 }
 
-func SgdUpdate(params, grads *NDArray, lr, wd float32) {
+func SgdUpdate(params, grads *NDArray, lr, wd float64) {
 	capi.OptimizerUpdate(
 		capi.OpSgdUpdate,
 		params.handle, grads.handle, nil, nil,
@@ -19,7 +19,7 @@ func SgdUpdate(params, grads *NDArray, lr, wd float32) {
 		capi.KeyWd, wd)
 }
 
-func AdamUpdate(params, grads, mean, variance *NDArray, lr, beta1, beta2, epsilon, wd float32) {
+func AdamUpdate(params, grads, mean, variance *NDArray, lr, beta1, beta2, epsilon, wd float64) {
 	capi.OptimizerUpdate(
 		capi.OpAdamUpdate,
 		params.handle, grads.handle, mean.handle, variance.handle,

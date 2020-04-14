@@ -3,6 +3,7 @@ package iris
 import (
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/fu/lazy"
+	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-ml/tables/csv"
 )
@@ -13,6 +14,7 @@ func source(x string) iokit.Input {
 }
 
 var dataset = source("iris.csv")
+var Features = []string{"Feature1","Feature2","Feature3","Feature4"}
 
 var Data tables.Lazy = func() lazy.Stream {
 	var cls = tables.Enumset{}
@@ -21,5 +23,5 @@ var Data tables.Lazy = func() lazy.Stream {
 		csv.Float32("sepalwidth").As("Feature2"),
 		csv.Float32("petallength").As("Feature3"),
 		csv.Float32("petalwidth").As("Feature4"),
-		csv.Meta(cls.Integer(), "class").As("Label"))()
+		csv.Meta(cls.Integer(), "class").As(model.LabelCol))()
 }

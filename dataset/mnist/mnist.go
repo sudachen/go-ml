@@ -5,6 +5,7 @@ import (
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/fu/lazy"
+	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/tables"
 	"github.com/sudachen/go-zorros/zorros"
 	"io/ioutil"
@@ -24,7 +25,9 @@ var t10kLabelsSource = source("t10k-labels-idx1-ubyte.gz")
 
 var Data tables.Lazy = func() lazy.Stream { return lazyread(imagesSource, labelsSource) }
 var T10k tables.Lazy = func() lazy.Stream { return lazyread(t10kImagesSource, t10kLabelsSource) }
-var Full tables.Lazy = Data.False("Test").Chain(T10k.True("Test"))
+var Full tables.Lazy = Data.False(model.TestCol).Chain(T10k.True(model.TestCol))
+
+var Features = []string{"Image"}
 
 func lazyread(imagesSource, labelsSource iokit.Input) lazy.Stream {
 	imr, err := imagesSource.Open()
@@ -61,7 +64,7 @@ func lazyread(imagesSource, labelsSource iokit.Input) lazy.Stream {
 	height := int(binary.BigEndian.Uint32(images[12:16]))
 	vol := width * height
 
-	names := []string{"Label", "Image"}
+	names := []string{model.LabelCol, "Image"}
 	f := fu.AtomicFlag{Value: 0}
 	return func(index uint64) (value reflect.Value, err error) {
 		if index == lazy.STOP {

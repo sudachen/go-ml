@@ -15,8 +15,8 @@ const total = "Total"
 const correct = "Correct"
 
 var Names = []string{
-	model.Iteration,
-	model.Subset,
+	model.IterationCol,
+	model.SubsetCol,
 	cerror,
 	accuracy,
 	sensitivity,
@@ -34,7 +34,6 @@ type Metrics struct {
 	Error      float64 // error goal
 	Delta      float64 // score delta
 	Confidence float32 // threshold for binary classification
-	History    int     // length of scores/models history
 }
 
 type MetricsUpdater struct {
@@ -77,10 +76,6 @@ func (m *Metrics) New(iteration int, subset string) model.MetricsUpdater {
 
 func (m *Metrics) Names() []string {
 	return Names
-}
-
-func (m *Metrics) HistoryLength() int {
-	return fu.Fnzi(m.History, model.HistoryLength)
 }
 
 /*
@@ -155,7 +150,7 @@ func (m *MetricsUpdater) Complete() (fu.Struct, bool) {
 	}
 	return fu.
 			NaStruct(Names, fu.Float32).
-			Set(model.Iteration, fu.IntZero).
-			Set(model.Subset, fu.EmptyString),
+			Set(model.IterationCol, fu.IntZero).
+			Set(model.SubsetCol, fu.EmptyString),
 		false
 }

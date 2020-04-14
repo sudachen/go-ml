@@ -37,10 +37,10 @@ func weights(x int) []float64 {
 	if x == 0 {
 		return []float64{}
 	} else if x < 25 {
-		return Ones1d(x)
+		return ones1d(x)
 	} else {
-		ramp := Linspace(1.0/float64(x), 1.0, x-25, true)
-		flat := Ones1d(25)
+		ramp := linspace(1.0/float64(x), 1.0, x-25, true)
+		flat := ones1d(25)
 		return append(ramp, flat...)
 	}
 }
@@ -95,13 +95,13 @@ func gamma(x int) int {
 
 func (s *sampler) splitObservationPairs(configVals []float64, lossVals [][2]float64) ([]float64, []float64) {
 	nbelow := gamma(len(configVals))
-	lossAscending := ArgSort2d(lossVals)
+	lossAscending := argSort2d(lossVals)
 
 	sort.Ints(lossAscending[:nbelow])
-	below := Choice(configVals, lossAscending[:nbelow])
+	below := choice(configVals, lossAscending[:nbelow])
 
 	sort.Ints(lossAscending[nbelow:])
-	above := Choice(configVals, lossAscending[nbelow:])
+	above := choice(configVals, lossAscending[nbelow:])
 	return below, above
 }
 
@@ -233,7 +233,7 @@ func (s *sampler) gmmLogPDF(samples []float64, pe estimator, low, high float64, 
 	if isLog {
 		jacobian = samples
 	} else {
-		jacobian = Ones1d(len(samples))
+		jacobian = ones1d(len(samples))
 	}
 	distance = make([][]float64, len(samples))
 	for i := range samples {
@@ -502,7 +502,7 @@ func (l List) sample2(s *sampler, below, above []float64) float64 {
 
 	// below
 	weightsBelow := weights(len(below))
-	countsBelow := Bincount(belowInt, weightsBelow, upper)
+	countsBelow := bincount(belowInt, weightsBelow, upper)
 	weightedBelowSum := 0.0
 	weightedBelow := make([]float64, len(countsBelow))
 	for i := range countsBelow {
@@ -517,7 +517,7 @@ func (l List) sample2(s *sampler, below, above []float64) float64 {
 
 	// above
 	weightsAbove := weights(len(above))
-	countsAbove := Bincount(aboveInt, weightsAbove, upper)
+	countsAbove := bincount(aboveInt, weightsAbove, upper)
 	weightedAboveSum := 0.0
 	weightedAbove := make([]float64, len(countsAbove))
 	for i := range countsAbove {

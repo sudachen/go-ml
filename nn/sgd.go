@@ -3,9 +3,9 @@ package nn
 import "github.com/sudachen/go-ml/nn/mx"
 
 type SGD struct {
-	Lr, Mom float32
+	Lr, Mom, Decay float64
 
-	LrMap map[int]float32
+	LrMap map[int]float64
 }
 
 func (opt *SGD) Init(e int) Optimizer {
@@ -36,5 +36,5 @@ func (opt *implSGD) Update(params *mx.NDArray, grads *mx.NDArray) {
 		}
 		mx.SgdMomUpdate(params, grads, st, opt.Lr, opt.Mom, 0)
 	}
-	mx.SgdUpdate(params, grads, opt.Lr, 0)
+	mx.SgdUpdate(params, grads, opt.Lr, opt.Decay)
 }

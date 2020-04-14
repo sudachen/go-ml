@@ -16,7 +16,7 @@ type ModelStash struct {
 func NewStash(histlen int, pattern string) *ModelStash {
 	return &ModelStash{
 		pattern: pattern,
-		files:   make([]iokit.TemporaryFile, histlen*2+1),
+		files:   make([]iokit.TemporaryFile, histlen+1),
 	}
 }
 
@@ -41,10 +41,10 @@ func (ms *ModelStash) Output(iteration int) (out iokit.Output, err error) {
 }
 
 func (ms *ModelStash) Reader(iteration int) (rd io.Reader, err error) {
-	if iteration > ms.iteration || (ms.iteration-iteration) > HistoryLength {
+	if iteration > ms.iteration || (ms.iteration-iteration) > len(ms.files) {
 		return nil, zorros.Errorf("iteration %v is out of stash [%v,%v]",
 			iteration,
-			fu.Maxi(ms.iteration-HistoryLength, 0),
+			fu.Maxi(ms.iteration-len(ms.files), 0),
 			ms.iteration)
 	}
 	f := ms.files[iteration%len(ms.files)]

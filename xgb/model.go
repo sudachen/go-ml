@@ -50,9 +50,8 @@ type Params map[string]interface{}
 Feed model with data
 */
 func (e Model) Feed(ds model.Dataset) model.FatModel {
-	return func(iterations int, output iokit.Output, metricsf model.Metrics, scoref model.Score) (model.Report, error) {
-		iterations = fu.Fnzi(iterations, 1)
-		return fit(iterations, e, ds, output, metricsf, scoref)
+	return func(w model.Workout) (*model.Report, error) {
+		return train(e, ds, w)
 	}
 }
 

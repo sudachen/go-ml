@@ -11,7 +11,7 @@ type Optimizer interface {
 	Update(params *mx.NDArray, grads *mx.NDArray)
 }
 
-func locateLr(epoch int, lrmap map[int]float32, dflt float32) float32 {
+func locateLr(epoch int, lrmap map[int]float64, dflt float64) float64 {
 	lr := dflt
 	if lrmap != nil {
 		e := -1

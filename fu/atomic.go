@@ -48,27 +48,15 @@ type AtomicFlag struct {
 /*
 Clear switches Integer to 0 atomically
 */
-func (c *AtomicFlag) Clear() (r bool) {
-	for atomic.LoadInt32(&c.Value) == 1 {
-		r = atomic.CompareAndSwapInt32(&c.Value, 1, 0)
-		if r {
-			return
-		}
-	}
-	return
+func (c *AtomicFlag) Clear() bool {
+	return atomic.CompareAndSwapInt32(&c.Value, 1, 0)
 }
 
 /*
 Set switches Integer to 1 atomically
 */
-func (c *AtomicFlag) Set() (r bool) {
-	for atomic.LoadInt32(&c.Value) == 0 {
-		r = atomic.CompareAndSwapInt32(&c.Value, 0, 1)
-		if r {
-			break
-		}
-	}
-	return
+func (c *AtomicFlag) Set() bool {
+	return atomic.CompareAndSwapInt32(&c.Value, 0, 1)
 }
 
 /*
@@ -77,4 +65,27 @@ State returns current state
 func (c *AtomicFlag) State() bool {
 	v := atomic.LoadInt32(&c.Value)
 	return bool(v != 0)
+}
+
+/*
+AtomicSingleIndex - it's an atomic positive integer single set value
+*/
+type AtomicSingleIndex struct {v uint64}
+
+/*
+Get returns index value
+*/
+func (c *AtomicSingleIndex) Get() (int, bool) {
+	v := atomic.LoadUint64(&c.v)
+	return int(v-1), v != 0
+}
+
+/*
+Set sets value if it was not set before
+*/
+func (c *AtomicSingleIndex) Set(value int) (int,bool) {
+	if  atomic.CompareAndSwapUint64(&c.v,0, uint64(value)+1) {
+		return value, true
+	}
+	return int(atomic.LoadUint64(&c.v)-1), false
 }

@@ -1,8 +1,12 @@
 package hyperopt
 
+/*
+Mostly, this file is copied from the github.com/c-bata/goptuna project
+*/
+
 import "sort"
 
-func Ones1d(size int) []float64 {
+func ones1d(size int) []float64 {
 	ones := make([]float64, size)
 	for i := 0; i < size; i++ {
 		ones[i] = 1
@@ -10,7 +14,7 @@ func Ones1d(size int) []float64 {
 	return ones
 }
 
-func Linspace(start, stop float64, num int, endPoint bool) []float64 {
+func linspace(start, stop float64, num int, endPoint bool) []float64 {
 	step := 0.
 	if endPoint {
 		if num == 1 {
@@ -30,7 +34,7 @@ func Linspace(start, stop float64, num int, endPoint bool) []float64 {
 	return r
 }
 
-func Choice(array []float64, idxs []int) []float64 {
+func choice(array []float64, idxs []int) []float64 {
 	results := make([]float64, len(idxs))
 	for i, idx := range idxs {
 		results[i] = array[idx]
@@ -38,7 +42,7 @@ func Choice(array []float64, idxs []int) []float64 {
 	return results
 }
 
-func Bincount(x []int, weights []float64, minlength int) []float64 {
+func bincount(x []int, weights []float64, minlength int) []float64 {
 	// Count the number of occurrences of each value in array of non-negative ints.
 	// https://docs.scipy.org/doc/numpy/reference/generated/numpy.bincount.html
 	counts := make([]float64, minlength)
@@ -57,7 +61,7 @@ func Bincount(x []int, weights []float64, minlength int) []float64 {
 	return counts
 }
 
-func Clip(array []float64, min, max float64) {
+func clip(array []float64, min, max float64) {
 	for i := range array {
 		if array[i] < min {
 			array[i] = min
@@ -67,7 +71,7 @@ func Clip(array []float64, min, max float64) {
 	}
 }
 
-func Location(array []float64, key float64) int {
+func location(array []float64, key float64) int {
 	i := 0
 	size := len(array)
 	for {
@@ -84,7 +88,7 @@ func Location(array []float64, key float64) int {
 	return i
 }
 
-func ArgSort2d(lossVals [][2]float64) []int {
+func argSort2d(lossVals [][2]float64) []int {
 	type sortable struct {
 		index   int
 		lossVal [2]float64

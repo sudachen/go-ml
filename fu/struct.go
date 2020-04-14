@@ -213,6 +213,19 @@ func (lr Struct) Set(c string, val reflect.Value) Struct {
 	return lr
 }
 
+func (lr Struct) Pos(c string) int {
+	return IndexOf(c, lr.Names)
+}
+
+func (lr Struct) ValueAt(i int) reflect.Value {
+	return lr.Columns[i]
+}
+
+func (lr Struct) Value(c string) reflect.Value {
+	j := IndexOf(c, lr.Names)
+	return lr.Columns[j]
+}
+
 func (lr Struct) Index(c string) Cell {
 	j := IndexOf(c, lr.Names)
 	return Cell{lr.Columns[j]}

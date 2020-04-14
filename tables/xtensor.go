@@ -4,7 +4,6 @@ import (
 	"github.com/sudachen/go-ml/fu"
 	"golang.org/x/xerrors"
 	"reflect"
-	"unsafe"
 )
 
 type Xtensor struct{ T reflect.Type }
@@ -24,7 +23,7 @@ func (t Xtensor) Convert(value string, field *reflect.Value, _, _ int) (_ bool, 
 
 func tensorOf(field *reflect.Value, tp reflect.Type, width int) (fu.Tensor, error) {
 	if field.IsValid() {
-		return *(*fu.Tensor)(unsafe.Pointer(field.Pointer())), nil
+		return (field.Interface()).(fu.Tensor), nil
 	}
 	var z fu.Tensor
 	switch tp {

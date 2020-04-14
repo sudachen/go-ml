@@ -9,28 +9,21 @@ import (
 	"math/rand"
 )
 
-type internalParams map[string]float64
-
-func (p internalParams) params() Params {
-	r := Params{}
-	for k, v := range p {
-		r[k] = float32(v)
-	}
-	return r
+type kfoldMetrics struct {
+	Test, Train fu.Struct
+	Score       float64
 }
 
+type trailMetrics []*kfoldMetrics
+
 type optimizer struct {
-	direct  Direction
-	params  []internalParams
+	params  []Params
 	scores  []float64
-	metrics []TrailMetrics
+	metrics []trailMetrics
 }
 
 func (opt *optimizer) observationPairs(name string) ([]float64, [][2]float64) {
-	var sign float64 = 1
-	if opt.direct == MaximizeScore {
-		sign = -1
-	}
+	var sign float64 = -1 // maximize score
 	L := len(opt.scores)
 	if L == 0 {
 		return []float64{}, [][2]float64{}
@@ -50,21 +43,21 @@ func (opt *optimizer) observationPairs(name string) ([]float64, [][2]float64) {
 func (opt *optimizer) update(name string, value float64) {
 	L := len(opt.scores)
 	if L == len(opt.params) {
-		opt.params = append(opt.params, internalParams{})
+		opt.params = append(opt.params, Params{})
 	}
 	opt.params[L][name] = value
 }
 
 func (opt *optimizer) current() Params {
-	return opt.params[len(opt.params)-1].params()
+	return opt.params[len(opt.params)-1]
 }
 
-func (opt *optimizer) complete(value float64, metrics TrailMetrics) {
+func (opt *optimizer) complete(value float64, metrics trailMetrics) {
 	opt.scores = append(opt.scores, value)
 	opt.metrics = append(opt.metrics, metrics)
 }
 
-const KfoldTest = "Test"
+const kfoldTest = model.TestCol
 
 func (ss Space) Optimize(trails int) (best BestParams, err error) {
 
@@ -73,12 +66,9 @@ func (ss Space) Optimize(trails int) (best BestParams, err error) {
 		return
 	}
 
-	if len(ss.Label) == 0 {
-		err = zorros.Errorf("dataset label is not specified")
-		return
-	}
+	Label := fu.Fnzs(ss.Label,model.LabelCol)
 
-	opt := &optimizer{direct: MaximizeScore}
+	opt := &optimizer{}
 	seed := fu.Seed(ss.Seed)
 	sm := &sampler{10, 24, rand.New(rand.NewSource(0)), 1}
 	for rno := 0; rno < trails; rno++ {
@@ -90,24 +80,25 @@ func (ss Space) Optimize(trails int) (best BestParams, err error) {
 		params := opt.current()
 		verbose.Printf("[%3d] sampled params: %#v", rno, params)
 		hm := ss.ModelFunc(params)
-		var trail = TrailMetrics{}
+		var trail = trailMetrics{}
 
 		// k-fold cross-validation
 		for k := 0; k < ss.Kfold; k++ {
-			var report model.Report
+			var report *model.Report
 			report, err = hm.Feed(model.Dataset{
-				Source:   ss.Source.Lazy().Kfold(seed, ss.Kfold, k, KfoldTest),
-				Label:    ss.Label,
+				Source:   ss.Source.Lazy().Kfold(seed, ss.Kfold, k, kfoldTest),
+				Label:    Label,
 				Features: ss.Features,
-				Test:     KfoldTest,
-			}).Fit(ss.Iterations, nil, ss.Metrics, ss.Score)
+				Test:     kfoldTest,
+			}).Train(model.Training{
+				Iterations:   ss.Iterations,
+				Metrics:      ss.Metrics,
+				Score:        ss.Score,
+			})
 			if err != nil {
 				return
 			}
-			t := &KfoldMetrics{
-				report.Test,
-				report.Train,
-				report.Score}
+			t := &kfoldMetrics{report.Test,report.Train,report.Score}
 			trail = append(trail, t)
 			verbose.Printf("[%3d/%3d] k-fold test: %v", rno, k, t.Test)
 			verbose.Printf("[%3d/%3d] k-fold train: %v", rno, k, t.Train)
@@ -126,7 +117,7 @@ func (ss Space) Optimize(trails int) (best BestParams, err error) {
 
 	// find params with the best score
 	j := fu.IndexOfMax(opt.scores)
-	best = BestParams{opt.params[j].params(), opt.scores[j]}
+	best = BestParams{opt.params[j], opt.scores[j]}
 	return
 }
 

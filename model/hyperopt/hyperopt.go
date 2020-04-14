@@ -62,21 +62,19 @@ Variance is a space of hyper-parameters used in *Search functions
 type Variance map[string]distribution
 
 /*
-Direction is an optimization direction
-*/
-type Direction int
-
-const (
-	// Minimize Score with respect to parameters
-	MinimizeScore Direction = iota
-	// Maximize Score with respect to parameters
-	MaximizeScore
-)
-
-/*
 Params is a set of hyper-parameters used by *SearchCV functions to generate new model
 */
-type Params map[string]float32
+type Params map[string]float64
+
+/*
+Get value of the parameter by name if exists and dflt value otherwise
+*/
+func (p Params) Get(name string, dflt float64) float64 {
+	if v, ok := p[name]; ok {
+		return v
+	}
+	return dflt
+}
 
 /*
 BestParams is a result of Hyper-parameters Optimization
@@ -86,24 +84,13 @@ type BestParams struct {
 	Score float64
 }
 
-type KfoldMetrics struct {
-	Test, Train fu.Struct
-	Score       float64
-}
-type TrailMetrics []*KfoldMetrics
-
-/*
-MetricsScore is a function-type of Score estimator of the fitting metrics
-*/
-type MetricsScore func(TrailMetrics, Direction) float64
-
 /*
 Space is a definition of hyper-parameters optimization space
 */
 type Space struct {
 	Source     tables.AnyData // dataset source
 	Features   []string       // dataset features
-	Label      string         // dataset lable
+	Label      string         // dataset label
 	Seed       int            // random seed
 	Kfold      int            // count of dataset folds
 	Iterations int            // model fitting iterations

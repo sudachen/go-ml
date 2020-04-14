@@ -15,7 +15,7 @@ import (
 )
 
 var mnistMLP0 = nn.Connect(
-	&nn.FullyConnected{Size: 128, Activation: nn.ReLU},
+	&nn.FullyConnected{Size: 128, Activation: nn.ReLU, Dropout: 0.3},
 	&nn.FullyConnected{Size: 64, Activation: nn.Swish, BatchNorm: true},
 	&nn.FullyConnected{Size: 10, Activation: nn.Softmax, BatchNorm: true})
 
@@ -34,9 +34,15 @@ func Test_mnistMLP0(t *testing.T) {
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.96}, classification.ErrorScore)
+	}).LuckyTrain(model.Training{
+		Iterations: 5,
+		ModelFile: modelFile,
+		Metrics: &classification.Metrics{Accuracy: 0.961},
+		Score: classification.ErrorScore,
+	})
 
-	fmt.Println(report)
+	fmt.Println(report.TheBest, report.Score)
+	fmt.Println(report.History.Round(5))
 	assert.Assert(t, classification.Accuracy(report.Test) >= 0.96)
 
 	net1 := nn.LuckyObjectify(modelFile) //.Gpu()
@@ -69,10 +75,15 @@ func Test_mnistConv0(t *testing.T) {
 		Label:    "Label",
 		Test:     "Test",
 		Features: []string{"Image"},
-	}).LuckyFit(5, modelFile, &classification.Metrics{Accuracy: 0.98}, classification.ErrorScore)
+	}).LuckyTrain(model.Training{
+		Iterations: 15,
+		ModelFile: modelFile,
+		Metrics: &classification.Metrics{Accuracy: 0.981},
+		Score: classification.ErrorScore,
+	})
 
-	fmt.Println(report.Score)
-	fmt.Println(report.History)
+	fmt.Println(report.TheBest, report.Score)
+	fmt.Println(report.History.Round(5))
 	assert.Assert(t, classification.Accuracy(report.Test) >= 0.98)
 
 	net1 := nn.LuckyObjectify(modelFile) //.Gpu()
@@ -91,18 +102,21 @@ func Test_minstXgb(t *testing.T) {
 		Estimators:   8,
 		Extra:        map[string]interface{}{"tree_method": "hist"},
 	}.Feed(model.Dataset{
-		Source:   mnist.Data.RandomFlag("Test", 42, 0.1),
-		Label:    "Label",
-		Test:     "Test",
-		Features: []string{"Image"},
-	}).LuckyFit(30, modelFile, &classification.Metrics{Accuracy: 0.96}, classification.AccuracyScore)
+		Source:   mnist.Data.RandomFlag(model.TestCol, 42, 0.1),
+		Features: mnist.Features,
+	}).LuckyTrain(model.Training{
+		Iterations: 30,
+		ModelFile: modelFile,
+		Metrics: &classification.Metrics{Accuracy: 0.96},
+		Score: classification.AccuracyScore,
+	})
 
-	fmt.Println(report.Score)
+	fmt.Println(report.TheBest, report.Score)
 	fmt.Println(report.History.Round(5))
 	assert.Assert(t, classification.Accuracy(report.Test) >= 0.96)
 
 	pred := xgb.LuckyObjectify(modelFile)
-	lr := model.LuckyEvaluate(mnist.T10k, "Label", pred, 32, &classification.Metrics{})
+	lr := model.LuckyEvaluate(mnist.T10k, model.LabelCol, pred, 32, &classification.Metrics{})
 	fmt.Println(lr.Round(5))
 	assert.Assert(t, classification.Accuracy(lr) >= 0.96)
 }

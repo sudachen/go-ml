@@ -135,10 +135,30 @@ func Indmaxd(a []float64) int {
 	return j
 }
 
+func Rindmaxd(a []float64) int {
+	j := 0
+	for i, x := range a {
+		if x >= a[j] {
+			j = i
+		}
+	}
+	return j
+}
+
 func Indmind(a []float64) int {
 	j := 0
 	for i, x := range a {
 		if x < a[j] {
+			j = i
+		}
+	}
+	return j
+}
+
+func Rindmind(a []float64) int {
+	j := 0
+	for i, x := range a {
+		if x <= a[j] {
 			j = i
 		}
 	}

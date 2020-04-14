@@ -5,9 +5,9 @@ import (
 )
 
 type Adam struct {
-	Lr, Beta1, Beta2, Epsilon float32
+	Lr, Beta1, Beta2, Epsilon, Decay float64
 
-	LrMap map[int]float32
+	LrMap map[int]float64
 }
 
 type stAdam struct {
@@ -53,5 +53,5 @@ func (opt *implAdam) Update(params *mx.NDArray, grads *mx.NDArray) {
 		st = stAdam{Var: v, Mean: m}
 		opt.States[params] = st
 	}
-	mx.AdamUpdate(params, grads, st.Mean, st.Var, opt.Lr, opt.Beta1, opt.Beta2, opt.Epsilon, 0)
+	mx.AdamUpdate(params, grads, st.Mean, st.Var, opt.Lr, opt.Beta1, opt.Beta2, opt.Epsilon, opt.Decay)
 }
