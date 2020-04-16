@@ -196,6 +196,8 @@ func Compose(
 	input Dimension,
 	dtype Dtype) *Graph {
 
+	ctx = ctx.Upgrade()
+	
 	g := &Graph{
 		Ctx:          ctx,
 		Dtype:        dtype,
