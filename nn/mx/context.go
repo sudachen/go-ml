@@ -56,7 +56,9 @@ func (c Context) Upgrade() Context {
 	}
 	if c.IsGPU() {
 		if c.DevNo() >= capi.GpuCount {
-			return GPU0
+			if capi.GpuCount == 0 {
+				return CPU
+			}
 		}
 	}
 	return c

@@ -197,7 +197,7 @@ func Compose(
 	dtype Dtype) *Graph {
 
 	ctx = ctx.Upgrade()
-	
+
 	g := &Graph{
 		Ctx:          ctx,
 		Dtype:        dtype,
