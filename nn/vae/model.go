@@ -29,10 +29,10 @@ type Model struct {
 	Latent int
 	// latent layer tensor as output of encoder and input for decoder
 	// vae.LatentCol by default
-	Feature  string
+	Feature string
 	// generative output for decoder
 	// model.PredictedCol by default
-	Predicted  string
+	Predicted string
 	// Mxnet Context
 	// mx.CPU by default
 	Context mx.Context
@@ -73,4 +73,3 @@ const DecoderCollection = "decoder"
 RecoderCollection is the name of collection containing recoder model
 */
 const RecoderCollection = "recoder"
-

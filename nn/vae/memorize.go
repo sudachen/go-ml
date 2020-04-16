@@ -70,5 +70,3 @@ func (e Model) modelmap(network *nn.Network, features []string) model.MemorizeMa
 		},
 	}
 }
-
-
