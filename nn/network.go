@@ -21,7 +21,7 @@ func (network *Network) Release() {
 func New(context mx.Context, nn Block, inputdim mx.Dimension, loss mx.Loss, batchSize int, seed int) *Network {
 	symbol := Combine(nn)
 	network := &Network{
-		Graph:     mx.Compose(context, symbol, loss, inputdim.Push(batchSize), mx.Float32),
+		Graph:     mx.Compose(context.Upgrade(), symbol, loss, inputdim.Push(batchSize), mx.Float32),
 		BatchSize: batchSize,
 		symbolic:  symbol,
 		inputdim:  inputdim,
@@ -50,7 +50,7 @@ func Load(context mx.Context, symbol, params iokit.Input, batchSize int) (*Netwo
 func Inherit(context mx.Context, nn Block, inputdim mx.Dimension, params iokit.Input, batchSize int, seed int) (*Network, error) {
 	symbol := Combine(nn)
 	network := &Network{
-		Graph:     mx.Compose(context, symbol, nil, inputdim.Push(batchSize), mx.Float32),
+		Graph:     mx.Compose(context.Upgrade(), symbol, nil, inputdim.Push(batchSize), mx.Float32),
 		BatchSize: batchSize,
 		symbolic:  symbol,
 		inputdim:  inputdim,
