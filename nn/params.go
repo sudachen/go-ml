@@ -12,7 +12,22 @@ import (
 	"math"
 )
 
-func (network *Network) SaveParams(output iokit.Output) (err error) {
+func nf(p func(string) bool, f func(string) bool) func(string) bool {
+	return func(s string) bool {
+		if p(s) {
+			return true
+		}
+		return f(s)
+	}
+}
+func (network *Network) SaveParams(output iokit.Output, only ...string) (err error) {
+	patt := func(string) bool { return true }
+	if len(only) > 0 {
+		patt = func(string) bool { return false }
+		for _, o := range only {
+			patt = nf(fu.Pattern(o), patt)
+		}
+	}
 	var wr iokit.Whole
 	if wr, err = output.Create(); err != nil {
 		return zorros.Trace(err)
@@ -40,6 +55,9 @@ func (network *Network) SaveParams(output iokit.Output) (err error) {
 		return zorros.Trace(err)
 	}
 	for _, n := range params {
+		if !patt(n) {
+			continue
+		}
 		d := network.Params[n]
 		if err = binary.Write(wr, order, int32(len(n))); err != nil {
 			return zorros.Trace(err)

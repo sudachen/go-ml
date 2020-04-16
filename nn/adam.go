@@ -21,8 +21,8 @@ type implAdam struct {
 	States map[*mx.NDArray]stAdam
 }
 
-func (opt *Adam) Init(e int) Optimizer {
-	r := &implAdam{Adam: *opt, States: make(map[*mx.NDArray]stAdam)}
+func (opt Adam) Init(e int) Optimizer {
+	r := &implAdam{Adam: opt, States: make(map[*mx.NDArray]stAdam)}
 	if r.Lr == 0 {
 		r.Lr = locateLr(e, opt.LrMap, 0.001)
 	}

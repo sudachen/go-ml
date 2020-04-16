@@ -1,94 +1,64 @@
-package classification
+package model
 
 import (
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/model"
 	"reflect"
 )
 
-const accuracy = "Accuracy"
-const sensitivity = "Sensitivity"
-const precision = "Precision"
-const f1Score = "F1Score"
-const cerror = "Error"
-const total = "Total"
-const correct = "Correct"
-
-var Names = []string{
-	model.IterationCol,
-	model.SubsetCol,
-	cerror,
-	accuracy,
-	sensitivity,
-	precision,
-	f1Score,
-	correct,
-	total,
-}
-
 /*
-Metrics - the classification metrics factory
+Classification metrics factory
 */
-type Metrics struct {
+type Classification struct {
 	Accuracy   float64 // accuracy goal
 	Error      float64 // error goal
-	Delta      float64 // score delta
 	Confidence float32 // threshold for binary classification
 }
 
-type MetricsUpdater struct {
-	Metrics
+/*
+Names is the list of calculating metrics
+*/
+func (m Classification) Names() []string {
+	return []string{
+		IterationCol,
+		SubsetCol,
+		ErrorCol,
+		LossCol,
+		AccuracyCol,
+		SensitivityCol,
+		PrecisionCol,
+		F1ScoreCol,
+		CorrectCol,
+		TotalCol,
+	}
+}
+
+/*
+New metrics updater for the given iteration and subset
+*/
+func (m Classification) New(iteration int, subset string) MetricsUpdater {
+	return &cfupdater{
+		Classification: m,
+		iteration:      iteration,
+		subset:         subset,
+		lIncorrect:     map[int]float64{},
+		rIncorrect:     map[int]float64{},
+		cCorrect:       map[int]float64{},
+	}
+}
+
+type cfupdater struct {
+	Classification
 	iteration  int
 	subset     string
 	correct    float64
+	loss       float64
 	lIncorrect map[int]float64
 	rIncorrect map[int]float64
 	cCorrect   map[int]float64
 	count      float64
 }
 
-func Error(lr fu.Struct) float64 {
-	return lr.Float(cerror)
-}
-
-func Accuracy(lr fu.Struct) float64 {
-	return lr.Float(accuracy)
-}
-
-func Precision(lr fu.Struct) float64 {
-	return lr.Float(precision)
-}
-
-func F1Score(lr fu.Struct) float64 {
-	return lr.Float(f1Score)
-}
-
-/*
-New iteration metrics
-*/
-func (m *Metrics) New(iteration int, subset string) model.MetricsUpdater {
-	return &MetricsUpdater{
-		*m, iteration, subset,
-		0,
-		map[int]float64{}, map[int]float64{}, map[int]float64{},
-		0}
-}
-
-func (m *Metrics) Names() []string {
-	return Names
-}
-
-/*
-Update updates internal false/true|positive/negative counters
-
-label - always is a class number [0..)
-
-result - can be a single integer value in interval [0..) or tensor of float values
-	if a single value, it's the class
-	otherwise class is selected by hot_one function
-
-*/
-func (m *MetricsUpdater) Update(result, label reflect.Value) {
+func (m *cfupdater) Update(result, label reflect.Value, loss float64) {
 	l := fu.Cell{label}.Int()
 	y := 0
 	if result.Type() == fu.TensorType {
@@ -111,10 +81,11 @@ func (m *MetricsUpdater) Update(result, label reflect.Value) {
 		m.lIncorrect[l] = m.lIncorrect[l] + 1
 		m.rIncorrect[y] = m.rIncorrect[y] + 1
 	}
+	m.loss += loss
 	m.count++
 }
 
-func (m *MetricsUpdater) Complete() (fu.Struct, bool) {
+func (m *cfupdater) Complete() (fu.Struct, bool) {
 	if m.count > 0 {
 		acc := m.correct / m.count
 		cno := float64(len(m.cCorrect))
@@ -132,6 +103,7 @@ func (m *MetricsUpdater) Complete() (fu.Struct, bool) {
 			reflect.ValueOf(m.iteration),
 			reflect.ValueOf(m.subset),
 			reflect.ValueOf(cerr),
+			reflect.ValueOf(m.loss / m.count),
 			reflect.ValueOf(acc),
 			reflect.ValueOf(sensitivity),
 			reflect.ValueOf(precision),
@@ -146,11 +118,11 @@ func (m *MetricsUpdater) Complete() (fu.Struct, bool) {
 		if m.Error > 0 {
 			goal = goal || cerr < m.Error
 		}
-		return fu.Struct{Names: Names, Columns: columns}, goal
+		return fu.Struct{Names: m.Names(), Columns: columns}, goal
 	}
 	return fu.
-			NaStruct(Names, fu.Float32).
-			Set(model.IterationCol, fu.IntZero).
-			Set(model.SubsetCol, fu.EmptyString),
+			NaStruct(m.Names(), fu.Float64).
+			Set(IterationCol, fu.IntZero).
+			Set(SubsetCol, fu.EmptyString),
 		false
 }

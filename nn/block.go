@@ -26,7 +26,7 @@ func (bc *BlockConnect) Combine(s *mx.Symbol) *mx.Symbol {
 	return s
 }
 
-func Connect(b ...Block) Block {
+func Sequence(b ...Block) Block {
 	return &BlockConnect{b}
 }
 

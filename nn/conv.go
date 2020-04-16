@@ -24,7 +24,7 @@ type Convolution struct {
 	Dropout    float32
 }
 
-func (ly *Convolution) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly Convolution) Combine(in *mx.Symbol) *mx.Symbol {
 	var bias *mx.Symbol
 
 	if ly.TurnOff {
@@ -39,7 +39,7 @@ func (ly *Convolution) Combine(in *mx.Symbol) *mx.Symbol {
 	if !ly.NoBias {
 		init := ly.BiasInit
 		if init == nil {
-			init = &Uniform{0.01}
+			init = Uniform{0.01}
 		}
 		bias = mx.Var(ns+"_bias", init)
 	}
@@ -53,7 +53,7 @@ func (ly *Convolution) Combine(in *mx.Symbol) *mx.Symbol {
 	}
 	out.SetName(ns)
 	if ly.BatchNorm && ly.Round == 0 {
-		out = (&BatchNorm{Name: ns}).Combine(out)
+		out = BatchNorm{Name: ns}.Combine(out)
 	}
 	if ly.Activation != nil {
 		out = ly.Activation(out)
@@ -78,7 +78,7 @@ type MaxPool struct {
 	BatchNorm bool
 }
 
-func (ly *MaxPool) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly MaxPool) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
 		ns = fmt.Sprintf("MaxPool%02d", NextSymbolId())
@@ -89,7 +89,7 @@ func (ly *MaxPool) Combine(in *mx.Symbol) *mx.Symbol {
 	}
 	out.SetName(ns)
 	if ly.BatchNorm && ly.Round == 0 {
-		out = (&BatchNorm{Name: ns}).Combine(out)
+		out = BatchNorm{Name: ns}.Combine(out)
 	}
 	return out
 }
@@ -105,7 +105,7 @@ type AvgPool struct {
 	BatchNorm bool
 }
 
-func (ly *AvgPool) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly AvgPool) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
 		ns = fmt.Sprintf("AvgPool%02d", NextSymbolId())
@@ -116,7 +116,7 @@ func (ly *AvgPool) Combine(in *mx.Symbol) *mx.Symbol {
 	}
 	out.SetName(ns)
 	if ly.BatchNorm && ly.Round == 0 {
-		out = (&BatchNorm{Name: ns}).Combine(out)
+		out = BatchNorm{Name: ns}.Combine(out)
 	}
 	return out
 }

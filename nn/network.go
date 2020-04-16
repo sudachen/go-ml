@@ -2,6 +2,7 @@ package nn
 
 import (
 	"github.com/sudachen/go-iokit/iokit"
+	"github.com/sudachen/go-ml/fu"
 	"github.com/sudachen/go-ml/nn/mx"
 	"time"
 )
@@ -25,10 +26,7 @@ func New(context mx.Context, nn Block, inputdim mx.Dimension, loss mx.Loss, batc
 		symbolic:  symbol,
 		inputdim:  inputdim,
 	}
-	if seed == 0 {
-		seed = int(time.Now().Unix())
-	}
-	network.Initialize(seed, nil)
+	network.Initialize(fu.Seed(seed), nil)
 	return network
 }
 
@@ -86,7 +84,7 @@ func (network *Network) Predict(data interface{}) [][]float32 {
 
 func (network *Network) Train(data interface{}, label interface{}, opt Optimizer) {
 	network.Graph.Input.SetValues(data)
-	if network.Graph.Label != nil {
+	if network.Graph.Label != nil && label != nil {
 		network.Graph.Label.SetValues(label)
 	}
 	network.Graph.Forward(true)

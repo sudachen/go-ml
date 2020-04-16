@@ -261,6 +261,20 @@ func (zf Lazy) IfNotFlag(c string) Lazy {
 	}
 }
 
+func (zf Lazy) Alias(c string, a string) Lazy {
+	return func() lazy.Stream {
+		z := zf()
+		return func(index uint64) (v reflect.Value, err error) {
+			v, err = z(index)
+			if err != nil || v.Kind() == reflect.Bool {
+				return
+			}
+			lr := v.Interface().(fu.Struct)
+			return reflect.ValueOf(lr.Set(a, lr.Value(c))), nil
+		}
+	}
+}
+
 func (zf Lazy) True(c string) Lazy {
 	return func() lazy.Stream {
 		z := zf()

@@ -20,7 +20,7 @@ func resetSymbolId(first int) {
 	_symbolId = first
 }
 
-func (network *Network) SaveSymbol(output iokit.Output) (err error) {
+func SaveSymbol(inputdim mx.Dimension, sym *mx.Symbol, output iokit.Output) (err error) {
 	var wr iokit.Whole
 	if wr, err = output.Create(); err != nil {
 		return
@@ -30,7 +30,7 @@ func (network *Network) SaveSymbol(output iokit.Output) (err error) {
 	x := struct {
 		Input    mx.Dimension `yaml:"input"`
 		Symbolic *mx.Symbol   `yaml:"symbolic"`
-	}{network.inputdim, network.symbolic}
+	}{inputdim, sym}
 	if err = enc.Encode(x); err != nil {
 		return
 	}
@@ -38,6 +38,10 @@ func (network *Network) SaveSymbol(output iokit.Output) (err error) {
 		return
 	}
 	return wr.Commit()
+}
+
+func (network *Network) SaveSymbol(output iokit.Output) (err error) {
+	return SaveSymbol(network.inputdim, network.symbolic, output)
 }
 
 func LoadSymbol(input iokit.Input) (symbolic *mx.Symbol, inputdim mx.Dimension, err error) {

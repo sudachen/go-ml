@@ -75,8 +75,8 @@ func (dim Dimension) Skip(n int) Dimension {
 
 func (dim Dimension) Push(i int) Dimension {
 	d := Dimension{Len: dim.Len + 1}
+	copy(d.Shape[1:dim.Len+1], dim.Shape[:dim.Len])
 	d.Shape[0] = i
-	copy(d.Shape[1:], dim.Shape[:dim.Len])
 	return d
 }
 
@@ -114,6 +114,10 @@ func (dim Dimension) Good() bool {
 		}
 	}
 	return true
+}
+
+func (dim Dimension) Empty() bool {
+	return dim.Len <= 0
 }
 
 // sizeof whole array data

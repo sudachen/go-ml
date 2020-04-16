@@ -7,13 +7,13 @@ import (
 
 type L0Loss struct{}
 
-func (*L0Loss) Loss(out *mx.Symbol) *mx.Symbol {
+func (L0Loss) Loss(out *mx.Symbol) *mx.Symbol {
 	return out
 }
 
 type L1Loss struct{ Num int }
 
-func (loss *L1Loss) Loss(out *mx.Symbol) *mx.Symbol {
+func (loss L1Loss) Loss(out *mx.Symbol) *mx.Symbol {
 	n := fu.Ifei(loss.Num == 0, 1, loss.Num)
 	label := mx.Var("_label", mx.Dim(0, n))
 	return mx.Mean(mx.Abs(mx.Sub(out, label)))
@@ -21,7 +21,7 @@ func (loss *L1Loss) Loss(out *mx.Symbol) *mx.Symbol {
 
 type L2Loss struct{ Num int }
 
-func (loss *L2Loss) Loss(out *mx.Symbol) *mx.Symbol {
+func (loss L2Loss) Loss(out *mx.Symbol) *mx.Symbol {
 	n := fu.Ifei(loss.Num == 0, 1, loss.Num)
 	label := mx.Var("_label", mx.Dim(0, n))
 	return mx.Mean(mx.Square(mx.Sub(out, label)))
@@ -29,22 +29,22 @@ func (loss *L2Loss) Loss(out *mx.Symbol) *mx.Symbol {
 
 type SoftmaxCrossEntropyLoss struct{}
 
-func (*SoftmaxCrossEntropyLoss) Loss(out *mx.Symbol) *mx.Symbol {
+func (SoftmaxCrossEntropyLoss) Loss(out *mx.Symbol) *mx.Symbol {
 	label := mx.Var("_label", mx.Dim(0, 1))
 	return mx.SoftmaxCrossEntropy(out, label)
 }
 
-type LabelCrossEntropyLoss struct{}
-
-func (*LabelCrossEntropyLoss) Loss(out *mx.Symbol) *mx.Symbol {
-	label := mx.Var("_label", mx.Dim(0, 1))
-	return mx.Mean(mx.Mul(mx.Log(mx.Pick(out, label)), -1))
-}
-
 type CrossEntropyLoss struct{ Num int }
 
-func (loss *CrossEntropyLoss) Loss(out *mx.Symbol) *mx.Symbol {
+func (loss CrossEntropyLoss) Loss(out *mx.Symbol) *mx.Symbol {
 	n := fu.Ifei(loss.Num == 0, 1, loss.Num)
 	label := mx.Var("_label", mx.Dim(0, n))
-	return mx.Mean(mx.Mul(mx.Log(mx.Pick(out, label)), -1))
+	a := mx.Log(mx.Add(mx.Pick(out, label), 1e-12))
+	return mx.Sum(mx.Mul(a, -1), -1)
+}
+
+type LossFunc func(*mx.Symbol) *mx.Symbol
+
+func (loss LossFunc) Loss(out *mx.Symbol) *mx.Symbol {
+	return loss(out)
 }

@@ -55,7 +55,7 @@ type Activation struct {
 	Name      string
 }
 
-func (ly *Activation) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly Activation) Combine(in *mx.Symbol) *mx.Symbol {
 	ns := ly.Name
 	if ns == "" {
 		ns = fmt.Sprintf("Activation%02d", NextSymbolId())
@@ -64,7 +64,7 @@ func (ly *Activation) Combine(in *mx.Symbol) *mx.Symbol {
 	}
 	out := in
 	if ly.BatchNorm {
-		out = (&BatchNorm{Name: ly.Name}).Combine(in)
+		out = BatchNorm{Name: ly.Name}.Combine(in)
 	}
 	if ly.Function != nil {
 		out = ly.Function(out)

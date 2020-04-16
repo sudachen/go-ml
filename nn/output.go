@@ -13,7 +13,7 @@ type Output struct {
 	End   int
 }
 
-func (ly *Output) Combine(a *mx.Symbol) *mx.Symbol {
+func (ly Output) Combine(a *mx.Symbol) *mx.Symbol {
 	name := ly.Name
 	if name == "" {
 		name = fmt.Sprintf("Output%d", NextSymbolId())

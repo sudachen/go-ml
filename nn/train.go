@@ -8,7 +8,13 @@ import (
 	"reflect"
 )
 
-func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Report, err error) {
+type ModelMapFunction func(network *Network, features []string, predicts string) model.MemorizeMap
+
+func DefaultModelMap(network *Network, features []string, predicts string) model.MemorizeMap {
+	return model.MemorizeMap{"model": mnemosyne{network, features, predicts}}
+}
+
+func Train(e Model, dataset model.Dataset, w model.Workout, mmf ModelMapFunction) (report *model.Report, err error) {
 	t, err := dataset.Source.Lazy().First(1).Collect()
 	if err != nil {
 		return
@@ -34,6 +40,9 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 	train := dataset.Source.Lazy().IfNotFlag(dataset.Test).Batch(e.BatchSize).Parallel()
 	full := dataset.Source.Lazy().Batch(e.BatchSize).Parallel()
 	out := make([]float32, network.Graph.Output.Dim().Total())
+	loss := make([]float32, network.Graph.Loss.Dim().Total())
+
+	//network.PrintSummary(true)
 
 	for done := false; w != nil && !done; w = w.Next() {
 		opt := e.Optimizer.Init(w.Iteration())
@@ -64,14 +73,21 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 			if err != nil {
 				return err
 			}
+			network.Label.SetValues(m.Labels)
 			network.Forward(m.Features, out)
 			resultCol := tables.MatrixColumn(out, e.BatchSize)
 			labelCol := t.Col(dataset.Label)
+			network.Loss.CopyValuesTo(loss)
+
+			l := loss[0]
 			for i, c := range t.Col(dataset.Test).ExtractAs(fu.Bool, true).([]bool) {
+				if len(loss) > 1 {
+					l = loss[i]
+				}
 				if c {
-					testmu.Update(resultCol.Value(i), labelCol.Value(i))
+					testmu.Update(resultCol.Value(i), labelCol.Value(i), float64(l))
 				} else {
-					trainmu.Update(resultCol.Value(i), labelCol.Value(i))
+					trainmu.Update(resultCol.Value(i), labelCol.Value(i), float64(l))
 				}
 			}
 			return nil
@@ -81,7 +97,7 @@ func train(e Model, dataset model.Dataset, w model.Workout) (report *model.Repor
 
 		lr0, _ := trainmu.Complete()
 		lr1, d := testmu.Complete()
-		memorize := model.MemorizeMap{"model": mnemosyne{network, features, predicts}}
+		memorize := mmf(network, features, predicts)
 		if report, done, err = w.Complete(memorize, lr0, lr1, d); err != nil {
 			return nil, zorros.Wrapf(err, "tailed to complete model: %s", err.Error())
 		}

@@ -5,7 +5,6 @@ import (
 	"github.com/sudachen/go-iokit/iokit"
 	"github.com/sudachen/go-ml/dataset/iris"
 	"github.com/sudachen/go-ml/fu"
-	"github.com/sudachen/go-ml/metrics/classification"
 	"github.com/sudachen/go-ml/model"
 	"github.com/sudachen/go-ml/model/hyperopt"
 	"github.com/sudachen/go-ml/xgb"
@@ -20,8 +19,8 @@ func Test_Optimize_Iris1(t *testing.T) {
 		Features:   iris.Features,
 		Kfold:      3,
 		Iterations: 19,
-		Metrics:    &classification.Metrics{},
-		Score:      classification.AccuracyScore,
+		Metrics:    &model.Classification{},
+		Score:      model.AccuracyScore,
 		ModelFunc:  xgb.Model{Algorithm: xgb.LinearBoost, Function: xgb.Softmax}.ModelFunc,
 		Variance: hyperopt.Variance{
 			"MaxDepth":     hyperopt.IntRange{1, 5},
@@ -32,7 +31,7 @@ func Test_Optimize_Iris1(t *testing.T) {
 
 	fmt.Println(par)
 
-	modelFile := iokit.File(fu.ModelPath("xgboost_test_v1.xgb"))
+	modelFile := iokit.File(fu.ModelPath("xgboost_test_v1.zip"))
 	report := xgb.Model{
 		Algorithm: xgb.TreeBoost,
 		Function:  xgb.Softmax,
@@ -42,8 +41,8 @@ func Test_Optimize_Iris1(t *testing.T) {
 	}).LuckyTrain(model.Training{
 		Iterations: 30,
 		ModelFile:  modelFile,
-		Metrics:    &classification.Metrics{},
-		Score:      classification.AccuracyScore,
+		Metrics:    &model.Classification{},
+		Score:      model.AccuracyScore,
 	})
 
 	fmt.Println(report.History.Round(4))

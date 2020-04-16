@@ -147,6 +147,40 @@ func (t tensor8u) String() string  { return "" }
 func (t tensor32f) String() string { return "" }
 func (t tensor64f) String() string { return "" }
 
+func (t tensori) Floats32() (r []float32) {
+	r = make([]float32, len(t.values))
+	for i, v := range t.values {
+		r[i] = float32(v)
+	}
+	return
+}
+
+func (t tensor8f) Floats32() (r []float32) {
+	r = make([]float32, len(t.values))
+	for i, v := range t.values {
+		r[i] = v.Float32()
+	}
+	return
+}
+
+func (t tensor8u) Floats32() (r []float32) {
+	r = make([]float32, len(t.values))
+	for i, v := range t.values {
+		r[i] = float32(v) / 256
+	}
+	return
+}
+
+func (t tensor64f) Floats32() (r []float32) {
+	r = make([]float32, len(t.values))
+	for i, v := range t.values {
+		r[i] = float32(v)
+	}
+	return
+}
+
+func (t tensor32f) Floats32() []float32 { return t.values }
+
 type tensor interface {
 	Dimension() (c, h, w int)
 	Volume() int
@@ -156,6 +190,7 @@ type tensor interface {
 	String() string
 	ConvertElem(val string, index int) error
 	HotOne() int
+	Floats32() []float32
 }
 
 type Tensor struct{ tensor }

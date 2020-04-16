@@ -14,7 +14,7 @@ type Slice struct {
 	TurnOff bool
 }
 
-func (ly *Slice) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly Slice) Combine(in *mx.Symbol) *mx.Symbol {
 	if ly.TurnOff {
 		return in
 	}

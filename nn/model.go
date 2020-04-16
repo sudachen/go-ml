@@ -27,7 +27,7 @@ type Model struct {
 
 func (e Model) Feed(ds model.Dataset) model.FatModel {
 	return func(workout model.Workout) (*model.Report, error) {
-		return train(e, ds, workout)
+		return Train(e, ds, workout, DefaultModelMap)
 	}
 }
 
@@ -133,7 +133,7 @@ func ObjectifyModel(c map[string]iokit.Input) (pm model.PredictionModel, err err
 	return m, nil
 }
 
-func Objectify(source iokit.InputOutput, collection ...string) (fm model.GpuPredictionModel, err error) {
+func Objectify(source iokit.Input, collection ...string) (fm model.GpuPredictionModel, err error) {
 	x := fu.Fnzs(fu.Fnzs(collection...), "model")
 	m, err := model.Objectify(source, model.ObjectifyMap{x: ObjectifyModel})
 	if err != nil {
@@ -142,7 +142,7 @@ func Objectify(source iokit.InputOutput, collection ...string) (fm model.GpuPred
 	return m[x].(model.GpuPredictionModel), nil
 }
 
-func LuckyObjectify(source iokit.InputOutput, collection ...string) model.GpuPredictionModel {
+func LuckyObjectify(source iokit.Input, collection ...string) model.GpuPredictionModel {
 	fm, err := Objectify(source, collection...)
 	if err != nil {
 		panic(err)

@@ -8,8 +8,8 @@ type SGD struct {
 	LrMap map[int]float64
 }
 
-func (opt *SGD) Init(e int) Optimizer {
-	r := &implSGD{SGD: *opt, States: make(map[*mx.NDArray]*mx.NDArray)}
+func (opt SGD) Init(e int) Optimizer {
+	r := &implSGD{SGD: opt, States: make(map[*mx.NDArray]*mx.NDArray)}
 	if r.Lr == 0 {
 		r.Lr = locateLr(e, opt.LrMap, 0.01)
 	}

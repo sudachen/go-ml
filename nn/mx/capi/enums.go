@@ -181,6 +181,7 @@ const (
 	OpOr
 	OpXor
 	OpDropout
+	OpExp
 	OpNoOp
 )
 
@@ -262,6 +263,7 @@ var opmap = map[MxnetOp]string{
 	OpReshapeLike:    "reshape_like",
 	OpBatchNorm:      "BatchNorm",
 	OpDropout:        "Dropout",
+	OpExp:            "exp",
 }
 
 func (o MxnetOp) Value() string {

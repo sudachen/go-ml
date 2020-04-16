@@ -280,6 +280,8 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 			return s
 		}
 		panic(fmt.Sprintf("symbol %s does not exist", s.Name))
+	case OpLink_:
+		return capi.CreateVariable(s.Name)
 	case OpVar_, OpNogVar_:
 		n := s.Name
 		if v, ok := g.vars[n]; ok {
@@ -315,7 +317,7 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 			_ = g.compose(v)
 		}
 		return g.compose(s.Args[0])
-	case capi.OpZeros, capi.OpOnes, capi.OpRandomUniform, capi.OpReshape:
+	case capi.OpZeros, capi.OpOnes, capi.OpRandomUniform, capi.OpReshape, capi.OpRandomNormal:
 		s1 := *s
 		s1.Attr = make(map[capi.MxnetKey]string)
 		for key, value := range s.Attr {
@@ -343,7 +345,6 @@ func (g *Graph) compose(s *Symbol) capi.SymbolHandle {
 			name = fmt.Sprintf("%s@%s%02d", s.Op.Value(), "sym", g.NextSymbolId())
 		}
 		capi.ComposeSymbol(op, name, a...)
-
 		if s.Name != "" {
 			g.refs[s.Name] = op
 		}

@@ -7,7 +7,7 @@ import (
 
 type Flatten struct{}
 
-func (ly *Flatten) Combine(a *mx.Symbol) *mx.Symbol {
+func (ly Flatten) Combine(a *mx.Symbol) *mx.Symbol {
 	return mx.Flatten(a)
 }
 
@@ -24,7 +24,7 @@ type FullyConnected struct {
 	Dropout    float32
 }
 
-func (ly *FullyConnected) Combine(in *mx.Symbol) *mx.Symbol {
+func (ly FullyConnected) Combine(in *mx.Symbol) *mx.Symbol {
 	var bias *mx.Symbol
 	ns := ly.Name
 	if ns == "" {
@@ -41,7 +41,7 @@ func (ly *FullyConnected) Combine(in *mx.Symbol) *mx.Symbol {
 	out := mx.FullyConnected(in, weight, bias, ly.Size, !ly.NoFlatten)
 	out.SetName(ns)
 	if ly.BatchNorm {
-		out = (&BatchNorm{Name: ns}).Combine(out)
+		out = BatchNorm{Name: ns}.Combine(out)
 	}
 	if ly.Activation != nil {
 		out = ly.Activation(out)

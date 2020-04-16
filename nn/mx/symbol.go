@@ -16,6 +16,7 @@ const (
 	OpOutput_ capi.MxnetOp = -9
 	OpBound_  capi.MxnetOp = -10
 	OpDepend_ capi.MxnetOp = -11
+	OpLink_   capi.MxnetOp = -12
 )
 
 type Inite interface {
@@ -255,6 +256,10 @@ func Var(name string, opt ...interface{}) *Symbol {
 
 func Value(name string, a ...float32) *Symbol {
 	return Var(name, Dim(len(a)), &_Value{Value: a})
+}
+
+func Link(name string) *Symbol {
+	return &Symbol{Op: OpLink_, Name: name}
 }
 
 func Ref(name string, a ...*Symbol) *Symbol {
@@ -618,6 +623,10 @@ func ReLU(a *Symbol) *Symbol {
 	return &Symbol{Op: capi.OpReLU, Args: []*Symbol{a}}
 }
 
+func Exp(a *Symbol) *Symbol {
+	return &Symbol{Op: capi.OpExp, Args: []*Symbol{a}}
+}
+
 func Transpose(a *Symbol, axis ...int) *Symbol {
 	s := make([]string, len(axis))
 	for i, a := range axis {
@@ -703,6 +712,17 @@ func ReshapeLike(a, b *Symbol) *Symbol {
 	return &Symbol{
 		Op:   capi.OpReshapeLike,
 		Args: []*Symbol{a, b},
+	}
+}
+
+func Normal(loc, scale float32, dim ...int) *Symbol {
+	return &Symbol{
+		Op:  capi.OpRandomNormal,
+		Dim: Dim(dim...),
+		Attr: map[capi.MxnetKey]string{
+			capi.KeyLoc:   fmt.Sprintf("%v", loc),
+			capi.KeyScale: fmt.Sprintf("%v", scale),
+		},
 	}
 }
 
